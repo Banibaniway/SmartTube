@@ -208,6 +208,18 @@ public class MotherActivity extends FragmentActivity {
         getViewManager().addOnFinish(mOnFinishTheApp);
 
         Utils.properlyFinishTheApp(this);
+
+        // Close all the app screens at once and remove the task.
+        // Otherwise the system may restart the app when the process is killed.
+        try {
+            if (VERSION.SDK_INT >= 21) {
+                super.finishAndRemoveTask();
+            } else {
+                super.finishAffinity();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void finishReally() {
