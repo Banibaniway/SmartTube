@@ -130,6 +130,13 @@ public class ViewManager {
     }
 
     public void startParentView(Activity activity) {
+        // The app is closing (see properlyFinishTheApp): don't launch the parent view.
+        // Otherwise the parent screen flashes and the app may restart.
+        if (mIsFinished && mIsMoveToBackEnabled) {
+            Log.d(TAG, "The app is closing. Skip starting the parent view...");
+            return;
+        }
+
         if (activity.getIntent() != null) {
             removeTopActivity();
 

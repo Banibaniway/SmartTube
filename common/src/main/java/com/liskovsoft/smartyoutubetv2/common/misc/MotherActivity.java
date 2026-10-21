@@ -41,6 +41,8 @@ public class MotherActivity extends FragmentActivity {
     private static final String TAG = MotherActivity.class.getSimpleName();
     private static final float DEFAULT_DENSITY = 2.0f; // xhdpi
     private static final float DEFAULT_WIDTH = 1920f; // xhdpi
+    // How long (wall clock, ms) the Back key must be held to close the whole app
+    private static final long LONG_BACK_EXIT_MS = 400;
     private static DisplayMetrics sCachedDisplayMetrics;
     protected static boolean sIsInPipMode;
     private ScreensaverManager mScreensaverManager;
@@ -52,6 +54,8 @@ public class MotherActivity extends FragmentActivity {
     private boolean mIsOculusQuestFixEnabled;
     private boolean mIsFullscreenModeEnabled;
     private boolean mIsBackPressed;
+    // Keep a strong ref: ViewManager holds the callback weakly
+    private final Runnable mOnFinishTheApp = () -> Utils.forceFinishTheApp(this);
 
     public interface OnPermissions {
         void onPermissions(int requestCode, String[] permissions, int[] grantResults);
@@ -143,6 +147,10 @@ public class MotherActivity extends FragmentActivity {
             }
         }
 
+        if (handleLongBackExit(event)) {
+            return true;
+        }
+
         try {
             return super.dispatchKeyEvent(event);
         } catch (NullPointerException | IllegalArgumentException | IllegalStateException | SecurityException | UnavailableException e) {
@@ -168,6 +176,50 @@ public class MotherActivity extends FragmentActivity {
 
         // Fix buggy G20s menu key (focus lost on key press)
         return KeyHelpers.isMenuKey(keyCode) || throttleKeyDown(keyCode) || result;
+    }
+
+    /**
+     * Long press on the Back key closes the whole app from any screen.<br/>
+     * The hold time is measured by the wall clock (not by the key repeat count, which varies between remotes).<br/>
+     * The app is closed on key release so the key doesn't leak into the next foreground app.
+     * @return true if the event was consumed
+     */
+    private boolean handleLongBackExit(KeyEvent event) {
+        if (event.getKeyCode() != KeyEvent.KEYCODE_BACK) {
+            return false;
+        }
+
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            // Swallow auto-repeats of the held key (only the first press goes through)
+            return event.getRepeatCount() > 0;
+        }
+
+        if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled() &&
+                event.getEventTime() - event.getDownTime() >= LONG_BACK_EXIT_MS) {
+            Log.d(TAG, "Long press on Back detected. Closing the app...");
+            finishTheApp();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void finishTheApp() {
+        getViewManager().addOnFinish(mOnFinishTheApp);
+
+        Utils.properlyFinishTheApp(this);
+
+        // Close all the app screens at once and remove the task.
+        // Otherwise the system may restart the app when the process is killed.
+        try {
+            if (VERSION.SDK_INT >= 21) {
+                super.finishAndRemoveTask();
+            } else {
+                super.finishAffinity();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void finishReally() {
