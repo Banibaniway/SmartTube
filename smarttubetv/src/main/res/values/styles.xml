@@ -256,7 +256,7 @@
     <style name="App.Theme.Kodi.Browse" parent="App.Theme.DarkGrey2.OLED.Browse">
         <!-- Same as before the monochrome base: black window, no logo, search icon color -->
         <item name="android:windowBackground">@color/scheme_grey_shelf_background_dark</item>
-        <item name="brandAccentColor">@color/semi_transparent</item>
+        <item name="brandAccentColor">@color/card_default_background_kodi</item>
         <item name="appLogo">@null</item>
         <item name="cardSelectedBackground">@color/card_selected_background_kodi</item>
         <item name="cardDefaultBackground">@color/card_default_background_kodi</item>
