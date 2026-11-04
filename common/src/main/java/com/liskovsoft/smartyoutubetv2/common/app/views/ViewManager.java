@@ -47,6 +47,9 @@ public class ViewManager {
     private long mPrevThrottleTimeMS;
     private boolean mIsMoveToBackEnabled;
     private boolean mIsFinished;
+    // Delayed exit cleanup: skipped when the app is relaunched before it runs
+    private volatile int mFinishGeneration;
+    private volatile boolean mIsFinishPending;
     private boolean mIsPlayerOnlyModeEnabled;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
@@ -130,6 +133,13 @@ public class ViewManager {
     }
 
     public void startParentView(Activity activity) {
+        // The app is closing (see properlyFinishTheApp): don't launch the parent view.
+        // Otherwise the parent screen flashes and the app may restart.
+        if (mIsFinished && mIsMoveToBackEnabled) {
+            Log.d(TAG, "The app is closing. Skip starting the parent view...");
+            return;
+        }
+
         if (activity.getIntent() != null) {
             removeTopActivity();
 
@@ -320,6 +330,9 @@ public class ViewManager {
 
             mActivityStack.clear();
 
+            final int finishGeneration = ++mFinishGeneration;
+            mIsFinishPending = true;
+
             ((MotherActivity) activity).finishReally();
 
             PlaybackPresenter.instance(activity).forceFinish();
@@ -331,6 +344,13 @@ public class ViewManager {
             // Do reset state because the app should continue to run in the background.
             // NOTE: Don't rely on MotherActivity.onDestroy() because activity can be killed silently.
             RxHelper.runAsync(() -> {
+                if (finishGeneration != mFinishGeneration) {
+                    // The app has been relaunched meanwhile: don't reset the new session
+                    Log.d(TAG, "The app is relaunched. Skip the exit cleanup...");
+                    return;
+                }
+
+                mIsFinishPending = false;
                 clearCaches();
                 SplashPresenter.unhold();
                 BrowsePresenter.unhold();
@@ -504,6 +524,17 @@ public class ViewManager {
         }
 
         return null;
+    }
+
+    /**
+     * The app is relaunched while closing: cancel the delayed exit cleanup.
+     */
+    public void cancelPendingFinish() {
+        if (mIsFinishPending) {
+            mIsFinishPending = false;
+            mFinishGeneration++;
+            mIsMoveToBackEnabled = false; // same as the cleanup does
+        }
     }
 
     public void cancelOnFinish() {

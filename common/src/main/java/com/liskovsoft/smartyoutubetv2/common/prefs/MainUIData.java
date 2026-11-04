@@ -209,6 +209,13 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         return mColorSchemes.get(mColorSchemeIndex);
     }
 
+    /**
+     * The "Kodi" color scheme: transparent cards, custom background, UI sounds.
+     */
+    public boolean isKodiScheme() {
+        return getColorScheme().isWhiteCardText;
+    }
+
     public void setColorScheme(ColorScheme scheme) {
         mColorSchemeIndex = mColorSchemes.indexOf(scheme);
         persistState();
@@ -421,6 +428,13 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
                 "App.Theme.Leanback.Blue.OLED.Browse",
                 "App.Theme.Leanback.Blue.Preferences",
                 mContext));
+        mColorSchemes.add(new ColorScheme(
+                R.string.color_scheme_kodi,
+                "App.Theme.Kodi.Player",
+                "App.Theme.Kodi.Browse",
+                "App.Theme.Kodi.Preferences",
+                mContext,
+                true));
     }
 
     private void restoreState() {
@@ -507,12 +521,24 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         public final int playerThemeResId;
         public final int browseThemeResId;
         public final int settingsThemeResId;
+        // Selected cards use white text too (Kodi theme)
+        public final boolean isWhiteCardText;
 
         public ColorScheme(int nameResId,
                            String playerTheme,
                            String browseTheme,
                            String settingsTheme,
                            Context context) {
+            this(nameResId, playerTheme, browseTheme, settingsTheme, context, false);
+        }
+
+        public ColorScheme(int nameResId,
+                           String playerTheme,
+                           String browseTheme,
+                           String settingsTheme,
+                           Context context,
+                           boolean isWhiteCardText) {
+            this.isWhiteCardText = isWhiteCardText;
             this.nameResId = nameResId;
             this.playerThemeResId = Helpers.getResourceId(playerTheme, "style", context);
             this.browseThemeResId = Helpers.getResourceId(browseTheme, "style", context);

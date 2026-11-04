@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.main;
 
 import android.os.Build.VERSION;
+import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
 import androidx.multidex.MultiDexApplication;
@@ -85,6 +86,22 @@ public class MainApplication extends MultiDexApplication implements Configuratio
 
         setupGlobalExceptionHandler();
         setupViewManager();
+        preloadWebEngine();
+    }
+
+    /**
+     * The first WebView of the process loads the system web engine and rebuilds all the app resources
+     * (the display metrics are reset to the system ones). The YouTube library creates one (PoToken)
+     * on the first video info request: if a screen is already built, its UI scale is lost (e.g. 0.8 becomes 1.0).<br/>
+     * Do it now, before any screen: the screens apply their scale on the final resources.
+     */
+    private void preloadWebEngine() {
+        try {
+            WebView webView = new WebView(this);
+            webView.destroy();
+        } catch (Throwable e) { // e.g. no WebView on the device
+            e.printStackTrace();
+        }
     }
 
     /**

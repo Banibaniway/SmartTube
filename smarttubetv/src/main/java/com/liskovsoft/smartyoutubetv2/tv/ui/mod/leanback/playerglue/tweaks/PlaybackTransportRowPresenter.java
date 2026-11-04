@@ -1035,6 +1035,15 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
                 R.color.lb_playback_progress_secondary_color_no_theme);
     }
 
+    private static Integer getThemeBackgroundProgressColor(Context context) {
+        TypedValue outValue = new TypedValue();
+        if (context.getTheme().resolveAttribute(
+                com.liskovsoft.smartyoutubetv2.tv.R.attr.playbackProgressBackgroundColor, outValue, true) && outValue.resourceId != 0) {
+            return context.getResources().getColor(outValue.resourceId);
+        }
+        return null;
+    }
+
     @Override
     protected RowPresenter.ViewHolder createRowViewHolder(ViewGroup parent) {
         View v = LayoutInflater.from(parent.getContext()).inflate(
@@ -1052,6 +1061,11 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
         vh.mProgressBar.setSecondaryProgressColor(mSecondaryProgressColorSet
                 ? mSecondaryProgressColor
                 : getDefaultSecondaryProgressColor(vh.mControlsDock.getContext()));
+        // Theme bar background (track), if any. Otherwise the default one of the bar.
+        Integer backgroundColor = getThemeBackgroundProgressColor(vh.mControlsDock.getContext());
+        if (backgroundColor != null) {
+            vh.mProgressBar.setBackgroundProgressColor(backgroundColor);
+        }
         vh.mControlsDock.addView(vh.mControlsVh.view);
 
         vh.mSecondaryControlsVh = (ControlBarPresenter.ViewHolder) mSecondaryControlsPresenter

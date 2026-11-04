@@ -28,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.proxy.ProxyManager;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
+import com.liskovsoft.smartyoutubetv2.common.utils.PlaybackWarmUp;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
@@ -38,6 +39,8 @@ import java.util.List;
 public class SplashPresenter extends BasePresenter<SplashView> {
     private static final String TAG = SplashPresenter.class.getSimpleName();
     private static final long APP_INIT_DELAY_MS = 10_000;
+    // Early warm-up of the playback engine (tokens, player data) to speed up the first video
+    private static final long WARM_UP_DELAY_MS = 1_500;
     @SuppressLint("StaticFieldLeak")
     private static SplashPresenter sInstance;
     private static boolean sRunOnce;
@@ -93,8 +96,10 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             initProxy();
             initVideoStateService();
             initStreamReminderService();
+            PlaybackWarmUp.start(getContext(), WARM_UP_DELAY_MS);
         }
     }
+
 
     private void runPerInstanceTasks() {
         if (!mRunPerInstance) {

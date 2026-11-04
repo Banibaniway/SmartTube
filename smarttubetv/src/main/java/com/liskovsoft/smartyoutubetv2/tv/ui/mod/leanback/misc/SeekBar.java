@@ -229,6 +229,13 @@ public final class SeekBar extends View {
     }
 
     /**
+     * Set color for the bar background (track).
+     */
+    public void setBackgroundProgressColor(int color) {
+        mBackgroundPaint.setColor(color);
+    }
+
+    /**
      * Set color for second progress which is usually for buffering indication.
      */
     public int getSecondaryProgressColor() {

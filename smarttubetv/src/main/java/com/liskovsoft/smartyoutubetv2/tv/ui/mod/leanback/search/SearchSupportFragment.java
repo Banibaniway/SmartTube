@@ -79,6 +79,8 @@ public class SearchSupportFragment extends Fragment {
 
     static final long SPEECH_RECOGNITION_DELAY_MS = 300;
 
+    // Top offset of the result rows when the search bar is hidden. Tweak if the layout needs more/less room.
+    static final int SEARCH_BAR_HIDDEN_ALIGN_TOP_DP = 66;
     static final int RESULTS_CHANGED = 0x1;
     static final int QUERY_COMPLETE = 0x2;
 
@@ -218,6 +220,8 @@ public class SearchSupportFragment extends Fragment {
     String mPendingQuery = null;
     SearchOrbView mSearchOrbView;
     SearchOrbView mSearchSettingsOrbView;
+    // MOD: hide the whole search bar (search is driven externally, e.g. from Kodi)
+    private boolean mSearchBarHidden;
 
     OnItemViewSelectedListener mOnItemViewSelectedListener;
     private OnItemViewClickedListener mOnItemViewClickedListener;
@@ -311,6 +315,10 @@ public class SearchSupportFragment extends Fragment {
 
         FrameLayout searchFrame = (FrameLayout) root.findViewById(R.id.lb_search_frame);
         mSearchBar = (SearchBar) searchFrame.findViewById(R.id.lb_search_bar);
+        if (mSearchBarHidden) {
+            // MOD: don't show the bar even before the first results arrive (loading state)
+            mSearchBar.setVisibility(View.GONE);
+        }
         mSearchBar.setOnFocusChangeListener((v, focused) -> {
             Log.d(TAG, "search bar focused");
         });
@@ -469,7 +477,8 @@ public class SearchSupportFragment extends Fragment {
         super.onStart();
 
         VerticalGridView list = mRowsSupportFragment.getVerticalGridView();
-        int mContainerListAlignTop =
+        int mContainerListAlignTop = mSearchBarHidden ?
+                (int) (SEARCH_BAR_HIDDEN_ALIGN_TOP_DP * getResources().getDisplayMetrics().density) :
                 getResources().getDimensionPixelSize(R.dimen.lb_search_browse_rows_align_top);
         list.setItemAlignmentOffset(0);
         list.setItemAlignmentOffsetPercent(VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
@@ -775,7 +784,14 @@ public class SearchSupportFragment extends Fragment {
         // NOP
     }
 
+    public void setSearchBarHidden(boolean hidden) {
+        mSearchBarHidden = hidden;
+    }
+
     public void focusOnSearchField() {
+        if (mSearchBarHidden) {
+            return;
+        }
         mSearchTextEditor.requestFocus(); // MOD: focus on search field
     }
 
@@ -869,6 +885,13 @@ public class SearchSupportFragment extends Fragment {
     }
 
     void updateSearchBarVisibility() {
+        if (mSearchBarHidden) {
+            if (mSearchBar != null) {
+                mSearchBar.setVisibility(View.GONE);
+            }
+            return;
+        }
+
         int position = mRowsSupportFragment != null ? mRowsSupportFragment.getSelectedPosition() : -1;
         try {
             mSearchBar.setVisibility(position <=0 || mResultAdapter == null

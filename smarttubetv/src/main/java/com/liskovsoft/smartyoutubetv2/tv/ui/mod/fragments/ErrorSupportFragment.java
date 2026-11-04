@@ -13,6 +13,8 @@
  */
 package com.liskovsoft.smartyoutubetv2.tv.ui.mod.fragments;
 
+import android.graphics.Color;
+import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import android.graphics.Paint;
 import android.graphics.Paint.FontMetricsInt;
 import android.graphics.PixelFormat;
@@ -187,7 +189,10 @@ public class ErrorSupportFragment extends BrandedSupportFragment {
 
     private void updateBackground() {
         if (mErrorFrame != null) {
-            if (mBackgroundDrawable != null) {
+            if (MainUIData.instance(mErrorFrame.getContext()).isKodiScheme()) {
+                // Kodi scheme: let the background image show through
+                mErrorFrame.setBackgroundColor(Color.TRANSPARENT);
+            } else if (mBackgroundDrawable != null) {
                 mErrorFrame.setBackground(mBackgroundDrawable);
             } else {
                 mErrorFrame.setBackgroundColor(mErrorFrame.getResources().getColor(

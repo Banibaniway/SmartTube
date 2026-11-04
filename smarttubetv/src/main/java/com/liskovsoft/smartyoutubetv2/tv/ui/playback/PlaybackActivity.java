@@ -48,6 +48,11 @@ public class PlaybackActivity extends LeanbackActivity {
     }
 
     @Override
+    protected boolean isUiSoundsAllowed() {
+        return false; // keep the player silent
+    }
+
+    @Override
     protected void initTheme() {
         int playerThemeResId = MainUIData.instance(this).getColorScheme().playerThemeResId;
         if (playerThemeResId > 0) {

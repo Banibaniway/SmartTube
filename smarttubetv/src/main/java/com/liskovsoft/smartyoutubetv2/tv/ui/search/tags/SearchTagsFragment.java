@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.tv.ui.search.tags;
 import android.os.Bundle;
 import android.speech.SpeechRecognizer;
 import android.text.TextUtils;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,6 +42,9 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     private String mNewQuery;
     private VideoCardPresenter mCardPresenter;
     private ShortsCardPresenter mShortsPresenter;
+    private static final long REFOCUS_RETRY_MS = 300;
+    // The results of the current search have already got the focus once
+    private boolean mIsResultsRefocused;
     private SearchData mSearchData;
     private boolean mIsFragmentCreated;
     private CrashRestorer mCrashRestorer;
@@ -62,6 +66,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
         mSearchGroupAdapters = new HashMap<>();
         mSearchData = SearchData.instance(getContext());
 
+        setSearchBarHidden(mSearchData.isSearchBarHidden());
         setupEventListeners();
         setKeyboardAutoShowEnabled(mSearchData.isKeyboardAutoShowEnabled());
         setKeyboardFixEnabled(mSearchData.isKeyboardFixEnabled());
@@ -126,6 +131,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     @Override
     public void clearSearch() {
         mSearchQuery = null;
+        mIsResultsRefocused = false;
 
         for (VideoGroupObjectAdapter adapter : mSearchGroupAdapters.values()) {
             adapter.clear();
@@ -353,6 +359,12 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
             mSearchGroupAdapters.put(mediaGroupId, mediaGroupAdapter);
             
             attachAdapter(getResultsAdapter().size(), rowHeader, mediaGroupAdapter);
+
+            // Only the first row: next rows (shorts, channels...) mustn't pull the selection back
+            if (!mIsResultsRefocused && (mSearchData.isSearchBarHidden() || mSearchData.isSearchSuggestionsDisabled())) {
+                mIsResultsRefocused = true;
+                refocusOnResultsLater();
+            }
         } else {
             Log.d(TAG, "Continue row %s %s", group.getTitle(), System.currentTimeMillis());
 
@@ -360,11 +372,27 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
         }
     }
 
+    /**
+     * Without the suggestions row / search bar nothing triggers a focus update after the videos arrive.<br/>
+     * A: immediately (posted). B: second try, in case the grid wasn't laid out yet.
+     */
+    private void refocusOnResultsLater() {
+        View view = getView();
+
+        if (view == null) {
+            return;
+        }
+
+        view.post(this::focusOnResults);
+        view.postDelayed(this::focusOnResults, REFOCUS_RETRY_MS);
+    }
+
     private void loadSearchResult(String searchQuery) {
         // Don't show suggested videos (empty query).
         // They are inaccurate and usually have problems with layout.
         if (!TextUtils.isEmpty(searchQuery) && !searchQuery.equals(mSearchQuery)) {
             mSearchQuery = searchQuery;
+            mIsResultsRefocused = false;
             mSearchPresenter.onSearch(searchQuery);
         }
     }

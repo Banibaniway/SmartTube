@@ -74,6 +74,14 @@ public class SearchSettingsPresenter extends BasePresenter<Void> {
                 option -> mSearchData.setSearchHistoryDisabled(option.isSelected()),
                 mSearchData.isSearchHistoryDisabled()));
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.disable_search_suggestions),
+                option -> mSearchData.setSearchSuggestionsDisabled(option.isSelected()),
+                mSearchData.isSearchSuggestionsDisabled()));
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.hide_search_bar),
+                option -> mSearchData.setSearchBarHidden(option.isSelected()),
+                mSearchData.isSearchBarHidden()));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.search_background_playback),
                 option -> mSearchData.setTempBackgroundModeEnabled(option.isSelected()),
                 mSearchData.isTempBackgroundModeEnabled()));

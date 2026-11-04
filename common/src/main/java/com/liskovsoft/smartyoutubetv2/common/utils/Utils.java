@@ -956,8 +956,16 @@ public class Utils {
         postDelayed(sForceFinishTheApp, 1_000);
     }
 
+    /**
+     * Saves the app data without killing the process.
+     */
+    public static void persistAppData(Context context) {
+        persistData(context);
+    }
+
     public static void cancelFinishTheApp(Context context) {
         ViewManager.instance(context).cancelOnFinish();
+        ViewManager.instance(context).cancelPendingFinish();
         removeCallbacks(sForceFinishTheApp);
     }
 

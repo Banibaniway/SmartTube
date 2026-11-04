@@ -7,9 +7,12 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build.VERSION;
 import android.os.Bundle;
+import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.view.KeyCharacterMap.UnavailableException;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
@@ -41,7 +44,11 @@ public class MotherActivity extends FragmentActivity {
     private static final String TAG = MotherActivity.class.getSimpleName();
     private static final float DEFAULT_DENSITY = 2.0f; // xhdpi
     private static final float DEFAULT_WIDTH = 1920f; // xhdpi
+    // How long (wall clock, ms) the Back key must be held to close the whole app
+    private static final long LONG_BACK_EXIT_MS = 400;
     private static DisplayMetrics sCachedDisplayMetrics;
+    // Caches computed from the scale (e.g. card sizes): cleared every time the scale is forgotten (app exit)
+    private static final java.util.Set<Runnable> sOnMetricsInvalidated = new java.util.concurrent.CopyOnWriteArraySet<>();
     protected static boolean sIsInPipMode;
     private ScreensaverManager mScreensaverManager;
     // Make static in case Don't keep activities enabled in Developer settings
@@ -77,6 +84,10 @@ public class MotherActivity extends FragmentActivity {
         mIsFullscreenModeEnabled = GeneralData.instance(this).isFullscreenModeEnabled();
 
         initDpi();
+
+        if (isUiSoundsEnabled()) {
+            UiSounds.init(this);
+        }
         initTheme();
 
         // Search Fullscreen routine inside onPause() method
@@ -143,8 +154,17 @@ public class MotherActivity extends FragmentActivity {
             }
         }
 
+        if (handleLongBackExit(event)) {
+            return true;
+        }
+
+        playKeySound(event);
+
         try {
-            return super.dispatchKeyEvent(event);
+            boolean handled = super.dispatchKeyEvent(event);
+
+            // Kodi scheme: do the focus move ourselves (the system would play its navigation sound)
+            return handled || moveFocusSilently(event);
         } catch (NullPointerException | IllegalArgumentException | IllegalStateException | SecurityException | UnavailableException e) {
             // NullPointerException: 'android.view.Window androidx.core.app.ComponentActivity.getWindow()' on a null object reference
             // IllegalArgumentException: View is not a direct child of HorizontalGridView
@@ -168,6 +188,171 @@ public class MotherActivity extends FragmentActivity {
 
         // Fix buggy G20s menu key (focus lost on key press)
         return KeyHelpers.isMenuKey(keyCode) || throttleKeyDown(keyCode) || result;
+    }
+
+    /**
+     * Kodi scheme: no Android navigation sound.<br/>
+     * The system plays it when it moves the focus by a D-pad key that no view has handled.
+     * Do the same steps as the system here (focus search, request focus, else unhandled move), but without the sound.<br/>
+     * The key is consumed once the focus search is done: the system must not search again
+     * (the Leanback grids count a pending move on each search: one key press would move twice).
+     * @return true if the key has been handled
+     */
+    private boolean moveFocusSilently(KeyEvent event) {
+        if (event.getAction() != KeyEvent.ACTION_DOWN || !event.hasNoModifiers() || !MainUIData.instance(this).isKodiScheme()) {
+            return false;
+        }
+
+        int direction;
+
+        switch (event.getKeyCode()) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                direction = View.FOCUS_LEFT;
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                direction = View.FOCUS_RIGHT;
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                direction = View.FOCUS_UP;
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                direction = View.FOCUS_DOWN;
+                break;
+            default:
+                return false;
+        }
+
+        View decorView = getWindow().getDecorView();
+        View focused = decorView.findFocus();
+
+        if (focused == null) {
+            return false; // the system restores the default focus (no sound, no focus search)
+        }
+
+        View next = focused.focusSearch(direction);
+
+        if (next != null && next != focused) {
+            Rect rect = new Rect();
+            focused.getFocusedRect(rect);
+
+            if (decorView instanceof ViewGroup) {
+                ((ViewGroup) decorView).offsetDescendantRectToMyCoords(focused, rect);
+                ((ViewGroup) decorView).offsetRectIntoDescendantCoords(next, rect);
+            }
+
+            if (next.requestFocus(direction, rect)) {
+                return true;
+            }
+        }
+
+        // Same as the system: last chance for the focused view to handle the key
+        decorView.dispatchUnhandledMove(focused, direction);
+
+        return true;
+    }
+
+    /**
+     * Long press on the Back key closes the whole app from any screen.<br/>
+     * The hold time is measured by the wall clock (not by the key repeat count, which varies between remotes).<br/>
+     * The app is closed on key release so the key doesn't leak into the next foreground app.
+     * @return true if the event was consumed
+     */
+    private boolean handleLongBackExit(KeyEvent event) {
+        if (event.getKeyCode() != KeyEvent.KEYCODE_BACK) {
+            return false;
+        }
+
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            // Swallow auto-repeats of the held key (only the first press goes through)
+            return event.getRepeatCount() > 0;
+        }
+
+        if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled() &&
+                event.getEventTime() - event.getDownTime() >= LONG_BACK_EXIT_MS) {
+            Log.d(TAG, "Long press on Back detected. Moving the app to the background...");
+            if (isUiSoundsEnabled()) {
+                UiSounds.play(UiSounds.OPEN);
+            }
+            moveAppToBackground();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Kodi color scheme only: click sound on OK, back sound on a short Back press (not in the player).
+     */
+    private void playKeySound(KeyEvent event) {
+        if (event.getAction() != KeyEvent.ACTION_UP || event.isCanceled() || !isUiSoundsEnabled()) {
+            return;
+        }
+
+        switch (event.getKeyCode()) {
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_NUMPAD_ENTER:
+            case KeyEvent.KEYCODE_BUTTON_A:
+                UiSounds.play(UiSounds.CLICK);
+                break;
+            case KeyEvent.KEYCODE_BACK:
+                UiSounds.play(UiSounds.BACK);
+                break;
+        }
+    }
+
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+
+        if (MainUIData.instance(this).isKodiScheme()) {
+            disableSystemSounds();
+        }
+    }
+
+    /**
+     * Kodi scheme: no Android navigation/click sounds (the app has its own).<br/>
+     * Decor view: focus navigation. Focused view: click.
+     */
+    private void disableSystemSounds() {
+        try {
+            View decorView = getWindow().getDecorView();
+            decorView.setSoundEffectsEnabled(false);
+            decorView.getViewTreeObserver().addOnGlobalFocusChangeListener((oldFocus, newFocus) -> {
+                if (newFocus != null) {
+                    newFocus.setSoundEffectsEnabled(false);
+                }
+            });
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean isUiSoundsEnabled() {
+        // The "white card text" flag identifies the Kodi color scheme
+        return isUiSoundsAllowed() && MainUIData.instance(this).isKodiScheme();
+    }
+
+    /**
+     * Screens that must stay silent (e.g. the player) override this.
+     */
+    protected boolean isUiSoundsAllowed() {
+        return true;
+    }
+
+    /**
+     * Same as the Home button but lands on the previous app (e.g. Kodi) directly.<br/>
+     * The app, its player and its caches stay alive, so the next start is instant.<br/>
+     * The process is closed by Kodi on its exit (org.smarttube.action.QUIT).
+     */
+    private void moveAppToBackground() {
+        Utils.persistAppData(getApplicationContext());
+
+        try {
+            moveTaskToBack(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void finishReally() {
@@ -362,6 +547,24 @@ public class MotherActivity extends FragmentActivity {
     public static void invalidate() {
         sCachedDisplayMetrics = null;
         sIsInPipMode = false;
+
+        // Sizes computed from the old scale must be recomputed too
+        for (Runnable callback : sOnMetricsInvalidated) {
+            try {
+                callback.run();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Callback is run every time the cached scale is forgotten, i.e. on app exit (keep a strong ref, e.g. a static field).
+     */
+    public static void addOnMetricsInvalidated(Runnable callback) {
+        if (callback != null) {
+            sOnMetricsInvalidated.add(callback);
+        }
     }
 
     public static DisplayMetrics getCachedDisplayMetrics() {
