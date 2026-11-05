@@ -17,6 +17,10 @@ public interface PlayerEngine extends PlayerConstants {
     void openMerged(InputStream dashManifest, String hlsPlaylistUrl);
     long getPositionMs();
     void setPositionMs(long positionMs);
+    /**
+     * Seek 1 ms after the current position without any check: recreates the audio output.
+     */
+    void resetAudioOutput();
     long getDurationMs();
     void setPlayWhenReady(boolean play);
     boolean getPlayWhenReady();

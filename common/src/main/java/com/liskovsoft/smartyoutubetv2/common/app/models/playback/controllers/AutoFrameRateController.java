@@ -12,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.AutoFrameRateHelper;
+import com.liskovsoft.smartyoutubetv2.common.autoframerate.HdmiAudioMonitor;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.ModeSyncManager;
 import com.liskovsoft.smartyoutubetv2.common.autoframerate.internal.DisplayHolder.Mode;
@@ -57,6 +58,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
     public void onInit() {
         mAutoFrameRateHelper.saveOriginalState(getActivity());
         mStateController = getController(VideoStateController.class);
+        HdmiAudioMonitor.init(getContext());
         mHQDialogController = getController(HQDialogController.class);
     }
 
@@ -94,6 +96,7 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
                 newMode.getRefreshRate());
         Log.d(TAG, message);
         //MessageHelpers.showLongMessage(getActivity(), message);
+        HdmiAudioMonitor.reset();
         maybePausePlayback();
         getPlayerData().setAfrSwitchTimeMs(System.currentTimeMillis());
     }
@@ -230,6 +233,12 @@ public class AutoFrameRateController extends BasePlayerController implements Aut
         // Fix restore after disable afr: don't do afr enabled check
         if (!skipAfr() && mAutoFrameRateHelper.isSupported() && getPlayerData().getAfrPauseMs() > 0) {
             mStateController.blockPlay(false);
+            // The HDMI audio has been reset by the mode switch during the pause: the audio output created before
+            // is rerouted with a wrong latency (audio early). Create it again now that the HDMI audio is back.
+            if (HdmiAudioMonitor.isReplugged()) {
+                HdmiAudioMonitor.reset();
+                getPlayer().resetAudioOutput();
+            }
             getPlayer().setPlayWhenReady(mIsPlay);
         }
     }

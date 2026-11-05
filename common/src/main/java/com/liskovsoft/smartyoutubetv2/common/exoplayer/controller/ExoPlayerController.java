@@ -9,6 +9,7 @@ import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SeekParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MergingMediaSource;
@@ -148,6 +149,20 @@ public class ExoPlayerController implements Player.EventListener {
         // Url list videos at load stage has undefined (-1) length. So, we need to remove length check.
         if (mPlayer != null && positionMs >= 0 && positionMs <= getDurationMs()) {
             mPlayer.seekTo(positionMs);
+        }
+    }
+
+    /**
+     * Seek 1 ms after the current position, without any check (the duration may be still unknown).<br/>
+     * The renderers are flushed: the audio output (AudioTrack) is released and created again.<br/>
+     * NOTE: a seek to the exact current position is ignored by ExoPlayer. Exact seek: the position isn't snapped to a key frame.
+     */
+    public void resetAudioOutput() {
+        if (mPlayer != null) {
+            SeekParameters seekParameters = mPlayer.getSeekParameters();
+            mPlayer.setSeekParameters(SeekParameters.EXACT);
+            mPlayer.seekTo(mPlayer.getCurrentPosition() + 1);
+            mPlayer.setSeekParameters(seekParameters);
         }
     }
 
