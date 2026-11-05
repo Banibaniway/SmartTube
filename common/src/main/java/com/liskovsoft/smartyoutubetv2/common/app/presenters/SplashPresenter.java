@@ -18,6 +18,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
+import com.liskovsoft.smartyoutubetv2.common.app.views.SearchView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
@@ -217,6 +219,13 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
             if (searchText != null || IntentExtractor.isStartVoiceCommand(intent)) {
                 SearchPresenter searchPresenter = SearchPresenter.instance(getContext());
+                if (isExternalIntent(intent)) {
+                    getViewManager().setExternalEntry(SearchView.class);
+                    // Don't show the results of the previous search while the new one is loading
+                    if (searchPresenter.getView() != null) {
+                        searchPresenter.getView().clearSearch();
+                    }
+                }
                 if (IntentExtractor.isInstantPlayCommand(intent)) {
                     searchPresenter.startPlay(searchText);
                 } else {
@@ -250,6 +259,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             String playlistId = IntentExtractor.extractPlaylistId(intent);
 
             if (playlistId != null) {
+                if (isExternalIntent(intent)) {
+                    getViewManager().setExternalEntry(ChannelUploadsView.class);
+                }
                 Video video = new Video();
                 video.playlistId = playlistId;
                 ChannelUploadsPresenter.instance(getContext()).openChannel(video);
@@ -358,6 +370,13 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                     () -> getView().finishView() // critical part, fix black screen on app exit
             );
         }
+    }
+
+    /**
+     * Opened by an external app (e.g. Kodi) while the app isn't on screen. Same test as the player only mode.
+     */
+    private boolean isExternalIntent(Intent intent) {
+        return !IntentExtractor.isRestartIntent(intent) && !IntentExtractor.isATVIntent(intent) && !getViewManager().isTopViewVisible();
     }
 
     private void enablePlayerOnlyModeIfNeeded(Intent intent) {

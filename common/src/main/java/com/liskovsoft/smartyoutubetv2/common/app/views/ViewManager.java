@@ -51,6 +51,8 @@ public class ViewManager {
     private volatile int mFinishGeneration;
     private volatile boolean mIsFinishPending;
     private boolean mIsPlayerOnlyModeEnabled;
+    // Screen opened directly by an external app (e.g. Kodi): Back on it returns to that app
+    private Class<?> mExternalEntryView;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
     private WeakHashSet<Runnable> mOnFinish;
@@ -140,6 +142,15 @@ public class ViewManager {
             return;
         }
 
+        // Back on the screen opened by an external app: return to that app (same as the player only mode)
+        if (mExternalEntryView != null && mViewMapping.get(mExternalEntryView) == activity.getClass()) {
+            Log.d(TAG, "Back on the external entry screen. Returning to the calling app...");
+            mExternalEntryView = null;
+            mActivityStack.clear();
+            safeMoveTaskToBack(activity);
+            return;
+        }
+
         if (activity.getIntent() != null) {
             removeTopActivity();
 
@@ -178,6 +189,7 @@ public class ViewManager {
     public void startDefaultView() {
         mIsMoveToBackEnabled = false;
         mIsPlayerOnlyModeEnabled = false;
+        mExternalEntryView = null;
 
         Class<?> lastActivity;
 
@@ -304,6 +316,23 @@ public class ViewManager {
         mIsPlayerOnlyModeEnabled = enable;
     }
 
+    /**
+     * The view is opened directly by an external app (e.g. Kodi).<br/>
+     * The previous screens are forgotten, so Back on this view returns to that app.
+     */
+    public void setExternalEntry(Class<?> viewClass) {
+        // Ensure that we're not opening tube link from description dialog
+        if (viewClass != null && AppDialogPresenter.instance(mContext).isDialogShown()) {
+            return;
+        }
+
+        mExternalEntryView = viewClass;
+
+        if (viewClass != null) {
+            mActivityStack.clear();
+        }
+    }
+
     public boolean isPlayerOnlyModeEnabled() {
         //return mIsPlayerOnlyModeEnabled && PlaybackPresenter.instance(mContext).getBackgroundMode() != PlayerEngine.BACKGROUND_MODE_PIP;
         return mIsPlayerOnlyModeEnabled && !PlaybackPresenter.instance(mContext).isInPipMode();
@@ -327,6 +356,7 @@ public class ViewManager {
             Log.d(TAG, "Trying finish the app...");
             mIsMoveToBackEnabled = true; // close all activities below current one
             mIsFinished = true;
+            mExternalEntryView = null;
 
             mActivityStack.clear();
 
