@@ -259,7 +259,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                 if (isExternalIntent(intent)) {
                     getViewManager().setExternalEntry(ChannelUploadsView.class);
                     // New session: forget the previous search (no return to its results)
-                    channelUploadsPresenter.clear();
+                    channelUploadsPresenter.clearSession();
                 }
                 Video video = new Video();
                 video.playlistId = playlistId;

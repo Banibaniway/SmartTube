@@ -47,6 +47,9 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
     // A playlist has been opened from the search results: Back shows the results again, focused on this item
     private String mReturnSearchText;
     private Video mReturnItem;
+    // Item clicked in the search results (kept by clear(): some paths call clear() before showing the new content)
+    private String mClickedSearchText;
+    private Video mClickedItem;
 
     public ChannelUploadsPresenter(Context context) {
         super(context);
@@ -89,6 +92,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mSearchText = null;
         mReturnSearchText = null;
         mReturnItem = null;
+        forgetClick();
     }
 
     @Override
@@ -98,6 +102,10 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
     @Override
     public void onVideoItemClicked(Video item) {
+        // A playlist opened from the search results may replace the grid content (see setChannel)
+        mClickedSearchText = mSearchText;
+        mClickedItem = mSearchText != null ? item : null;
+
         VideoActionPresenter.instance(getContext()).apply(item);
     }
 
@@ -173,7 +181,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
             return;
         }
 
-        clear();
+        clearSession();
 
         mSearchText = searchText;
 
@@ -197,6 +205,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         Video item = mReturnItem;
 
         clear();
+        forgetClick();
 
         mSearchText = searchText;
         getView().selectItem(item); // restored when the item is loaded (the grid loads the next pages if needed)
@@ -259,6 +268,28 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
     public void setChannel(Video channel) {
         mChannel = channel;
+
+        // Playlist clicked in the search results, opened by MediaServiceManager.chooseChannelPresenter()
+        // (clear() then setChannel()): remember the results for Back
+        if (channel != null && mClickedSearchText != null && channel.equals(mClickedItem)) {
+            mReturnSearchText = mClickedSearchText;
+            mReturnItem = mClickedItem;
+        }
+
+        forgetClick();
+    }
+
+    /**
+     * New content opened by an external app (e.g. Kodi): forget the previous search and its results.
+     */
+    public void clearSession() {
+        clear();
+        forgetClick();
+    }
+
+    private void forgetClick() {
+        mClickedSearchText = null;
+        mClickedItem = null;
     }
 
     private void disposeActions() {
