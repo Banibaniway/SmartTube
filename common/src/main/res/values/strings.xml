@@ -630,8 +630,6 @@
     <string name="unknown_renderer_error">Unknown renderer error</string>
     <string name="header_notifications">Notifications</string>
     <string name="disable_search_history">Disable search history</string>
-    <string name="disable_search_suggestions">Hide search suggestions above the results</string>
-    <string name="hide_search_bar">Hide the search bar (results only)</string>
     <string name="unlock_high_bitrate_formats">Unlock high bitrate 1080p vp9 formats</string>
     <string name="unlock_high_bitrate_audio_formats">Unlock high bitrate mp4a formats</string>
     <string name="color_scheme_blue">Blue</string>

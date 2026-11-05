@@ -24,8 +24,6 @@ public class SearchData {
     private boolean mIsPopularSearchesDisabled;
     private boolean mIsKeyboardFixEnabled;
     private boolean mIsTypingCorrectionDisabled;
-    private boolean mIsSearchSuggestionsDisabled;
-    private boolean mIsSearchBarHidden;
 
     private SearchData(Context context) {
         mAppPrefs = AppPrefs.instance(context);
@@ -138,24 +136,6 @@ public class SearchData {
         persistData();
     }
 
-    public boolean isSearchSuggestionsDisabled() {
-        return mIsSearchSuggestionsDisabled;
-    }
-
-    public void setSearchSuggestionsDisabled(boolean disabled) {
-        mIsSearchSuggestionsDisabled = disabled;
-        persistData();
-    }
-
-    public boolean isSearchBarHidden() {
-        return mIsSearchBarHidden;
-    }
-
-    public void setSearchBarHidden(boolean hidden) {
-        mIsSearchBarHidden = hidden;
-        persistData();
-    }
-
     public boolean isPopularSearchesDisabled() {
         return mIsPopularSearchesDisabled;
     }
@@ -185,8 +165,6 @@ public class SearchData {
         mIsPopularSearchesDisabled = Helpers.parseBoolean(split, 9, false);
         mIsKeyboardFixEnabled = Helpers.parseBoolean(split, 10, false);
         mIsTypingCorrectionDisabled = Helpers.parseBoolean(split, 11, false);
-        mIsSearchSuggestionsDisabled = Helpers.parseBoolean(split, 12, false);
-        mIsSearchBarHidden = Helpers.parseBoolean(split, 13, false);
     }
 
     private void persistData() {
@@ -194,7 +172,6 @@ public class SearchData {
                 Helpers.mergeData(mIsInstantVoiceSearchEnabled, mSearchOptions, mIsFocusOnResultsEnabled,
                         mIsKeyboardAutoShowEnabled, mIsTempBackgroundModeEnabled, null, mSpeechRecognizerType,
                         mIsTrendingSearchesEnabled, mIsSearchHistoryDisabled, mIsPopularSearchesDisabled,
-                        mIsKeyboardFixEnabled, mIsTypingCorrectionDisabled, mIsSearchSuggestionsDisabled,
-                        mIsSearchBarHidden));
+                        mIsKeyboardFixEnabled, mIsTypingCorrectionDisabled));
     }
 }

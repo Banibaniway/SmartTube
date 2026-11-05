@@ -19,7 +19,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelec
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.SearchView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
@@ -219,15 +218,12 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
             if (searchText != null || IntentExtractor.isStartVoiceCommand(intent)) {
                 SearchPresenter searchPresenter = SearchPresenter.instance(getContext());
-                if (isExternalIntent(intent)) {
-                    getViewManager().setExternalEntry(SearchView.class);
-                    // Don't show the results of the previous search while the new one is loading
-                    if (searchPresenter.getView() != null) {
-                        searchPresenter.getView().clearSearch();
-                    }
-                }
                 if (IntentExtractor.isInstantPlayCommand(intent)) {
                     searchPresenter.startPlay(searchText);
+                } else if (searchText != null && isExternalIntent(intent)) {
+                    // Search from an external app (e.g. Kodi): main results in the grid, Back returns to that app
+                    getViewManager().setExternalEntry(ChannelUploadsView.class);
+                    ChannelUploadsPresenter.instance(getContext()).openSearch(searchText);
                 } else {
                     searchPresenter.startSearch(searchText);
                 }
@@ -259,12 +255,15 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             String playlistId = IntentExtractor.extractPlaylistId(intent);
 
             if (playlistId != null) {
+                ChannelUploadsPresenter channelUploadsPresenter = ChannelUploadsPresenter.instance(getContext());
                 if (isExternalIntent(intent)) {
                     getViewManager().setExternalEntry(ChannelUploadsView.class);
+                    // New session: forget the previous search (no return to its results)
+                    channelUploadsPresenter.clear();
                 }
                 Video video = new Video();
                 video.playlistId = playlistId;
-                ChannelUploadsPresenter.instance(getContext()).openChannel(video);
+                channelUploadsPresenter.openChannel(video);
                 return true;
             }
 

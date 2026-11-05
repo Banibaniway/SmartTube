@@ -44,8 +44,6 @@ public class MotherActivity extends FragmentActivity {
     private static final String TAG = MotherActivity.class.getSimpleName();
     private static final float DEFAULT_DENSITY = 2.0f; // xhdpi
     private static final float DEFAULT_WIDTH = 1920f; // xhdpi
-    // How long (wall clock, ms) the Back key must be held to close the whole app
-    private static final long LONG_BACK_EXIT_MS = 400;
     private static DisplayMetrics sCachedDisplayMetrics;
     // Caches computed from the scale (e.g. card sizes): cleared every time the scale is forgotten (app exit)
     private static final java.util.Set<Runnable> sOnMetricsInvalidated = new java.util.concurrent.CopyOnWriteArraySet<>();
@@ -154,10 +152,6 @@ public class MotherActivity extends FragmentActivity {
             }
         }
 
-        if (handleLongBackExit(event)) {
-            return true;
-        }
-
         playKeySound(event);
 
         try {
@@ -252,35 +246,6 @@ public class MotherActivity extends FragmentActivity {
     }
 
     /**
-     * Long press on the Back key closes the whole app from any screen.<br/>
-     * The hold time is measured by the wall clock (not by the key repeat count, which varies between remotes).<br/>
-     * The app is closed on key release so the key doesn't leak into the next foreground app.
-     * @return true if the event was consumed
-     */
-    private boolean handleLongBackExit(KeyEvent event) {
-        if (event.getKeyCode() != KeyEvent.KEYCODE_BACK) {
-            return false;
-        }
-
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            // Swallow auto-repeats of the held key (only the first press goes through)
-            return event.getRepeatCount() > 0;
-        }
-
-        if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled() &&
-                event.getEventTime() - event.getDownTime() >= LONG_BACK_EXIT_MS) {
-            Log.d(TAG, "Long press on Back detected. Moving the app to the background...");
-            if (isUiSoundsEnabled()) {
-                UiSounds.play(UiSounds.OPEN);
-            }
-            moveAppToBackground();
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Kodi color scheme only: click sound on OK, back sound on a short Back press (not in the player).
      */
     private void playKeySound(KeyEvent event) {
@@ -338,21 +303,6 @@ public class MotherActivity extends FragmentActivity {
      */
     protected boolean isUiSoundsAllowed() {
         return true;
-    }
-
-    /**
-     * Same as the Home button but lands on the previous app (e.g. Kodi) directly.<br/>
-     * The app, its player and its caches stay alive, so the next start is instant.<br/>
-     * The process is closed by Kodi on its exit (org.smarttube.action.QUIT).
-     */
-    private void moveAppToBackground() {
-        Utils.persistAppData(getApplicationContext());
-
-        try {
-            moveTaskToBack(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public void finishReally() {

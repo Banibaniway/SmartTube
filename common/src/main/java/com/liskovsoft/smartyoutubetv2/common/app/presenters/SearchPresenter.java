@@ -69,9 +69,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
             return;
         }
 
-        // No provider: no suggestions row above the results (and no request for them)
-        getView().setTagsProvider(getSearchData().isSearchSuggestionsDisabled() ?
-                null : new MediaServiceSearchTagProvider(getSearchData().isSearchHistoryDisabled()));
+        getView().setTagsProvider(new MediaServiceSearchTagProvider(getSearchData().isSearchHistoryDisabled()));
 
         startSearchInt();
     }
