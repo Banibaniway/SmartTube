@@ -40,8 +40,6 @@ public class VideoStateController extends BasePlayerController {
     @Nullable
     private Boolean mIsRestoreActualLive;
     private long mSleepTimerStartMs;
-    // History disabled: position of the current video, in memory only (never saved on the device)
-    private State mSessionState;
 
     @Override
     public void onInit() {
@@ -542,7 +540,7 @@ public class VideoStateController extends BasePlayerController {
         if (isPositionActual && !isLiveBroken) { // partially viewed
             State state = new State(video, positionMs, durationMs, getPlayer().getSpeed());
             if (isHistoryDisabled) {
-                mSessionState = state;
+                getStateService().setSessionState(state);
             } else {
                 getStateService().save(state);
             }
@@ -551,7 +549,8 @@ public class VideoStateController extends BasePlayerController {
         } else { // fully viewed
             // Mark video as fully viewed. This could help to restore proper progress marker on the video card later.
             if (isHistoryDisabled) {
-                mSessionState = null; // nothing to resume
+                // Full progress marker on the card, the playback starts from the beginning (see restorePosition)
+                getStateService().setSessionState(new State(video, durationMs, durationMs, getPlayer().getSpeed()));
             } else {
                 getStateService().save(new State(video, durationMs, durationMs, getPlayer().getSpeed()));
             }
@@ -570,11 +569,10 @@ public class VideoStateController extends BasePlayerController {
 
         State state = getStateService().getByVideoId(item.videoId);
 
-        // History disabled: use the in-memory position of the same video
-        if (state == null && getGeneralData().getHistoryState() == GeneralData.HISTORY_DISABLED
-                && mSessionState != null && mSessionState.video != null
-                && item.videoId != null && item.videoId.equals(mSessionState.video.videoId)) {
-            state = mSessionState;
+        // History disabled (in-memory state): a fully viewed video starts from the beginning
+        if (state != null && getGeneralData().getHistoryState() == GeneralData.HISTORY_DISABLED
+                && state.durationMs > 0 && state.durationMs - state.positionMs <= 1_000) {
+            state = null;
         }
 
         boolean stateIsOutdated = isStateOutdated(state, item);
