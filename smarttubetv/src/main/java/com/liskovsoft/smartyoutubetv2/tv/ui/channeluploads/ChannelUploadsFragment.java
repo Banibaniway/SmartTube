@@ -75,6 +75,13 @@ public class ChannelUploadsFragment extends VideoGridFragment implements Channel
         mChannelUploadsPresenter.onFinish();
     }
 
+    /**
+     * @return true if Back is handled (search results shown again)
+     */
+    public boolean goBack() {
+        return mChannelUploadsPresenter != null && mChannelUploadsPresenter.goBack();
+    }
+
     @Override
     public void onResume() {
         super.onResume();

@@ -15,6 +15,18 @@ public class ChannelUploadsActivity extends LeanbackActivity {
         mFragment = (ChannelUploadsFragment) getSupportFragmentManager().findFragmentById(R.id.channel_uploads_fragment);
     }
 
+    /**
+     * Back key. A playlist opened from the search results: show the results again instead of closing.
+     */
+    @Override
+    public void finish() {
+        if (mFragment != null && mFragment.goBack()) {
+            return;
+        }
+
+        super.finish();
+    }
+
     @Override
     public void finishReally() {
         super.finishReally();

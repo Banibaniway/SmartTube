@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.presenter;
 
+import android.graphics.Color;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -54,7 +55,8 @@ public class VideoCardPresenter extends LongClickPresenter {
                 ContextCompat.getColor(context, R.color.card_default_text);
         mSelectedBackgroundColor =
                 ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardSelectedBackground));
-        mSelectedTextColor =
+        mSelectedTextColor = MainUIData.instance(context).getColorScheme().isWhiteCardText ?
+                ContextCompat.getColor(context, R.color.card_default_text) :
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
 
         mCardPreviewType = getCardPreviewType(context);
@@ -84,7 +86,9 @@ public class VideoCardPresenter extends LongClickPresenter {
         cardView.enableBadge(isBadgeEnabled());
         cardView.enableTitle(isTitleEnabled());
         cardView.enableContent(isContentEnabled());
-        cardView.setBackgroundColor(mDefaultBackgroundColor); // background is temporarily visible during animations
+        // background is temporarily visible during animations
+        // Kodi scheme: transparent, otherwise the translucent colors would stack with the info field
+        cardView.setBackgroundColor(MainUIData.instance(context).isKodiScheme() ? Color.TRANSPARENT : mDefaultBackgroundColor);
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(context).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    cardView.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));
         //}
@@ -108,10 +112,16 @@ public class VideoCardPresenter extends LongClickPresenter {
 
         TextView titleText = view.findViewById(R.id.title_text);
         if (titleText != null) {
+            if (MainUIData.instance(view.getContext()).isKodiScheme()) {
+                titleText.setBackgroundColor(Color.TRANSPARENT);
+            }
             titleText.setTextColor(textColor);
         }
         TextView contentText = view.findViewById(R.id.content_text);
         if (contentText != null) {
+            if (MainUIData.instance(view.getContext()).isKodiScheme()) {
+                contentText.setBackgroundColor(Color.TRANSPARENT);
+            }
             contentText.setTextColor(textColor);
         }
     }

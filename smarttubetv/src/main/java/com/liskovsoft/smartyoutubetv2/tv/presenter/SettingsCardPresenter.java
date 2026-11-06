@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.presenter;
 
+import android.graphics.Color;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build.VERSION;
@@ -30,20 +31,25 @@ public class SettingsCardPresenter extends Presenter {
                 ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardDefaultBackground));
         mDefaultTextColor =
                 ContextCompat.getColor(context, R.color.card_default_text);
-        mSelectedBackgroundColor =
+        boolean isKodi = MainUIData.instance(context).isKodiScheme();
+        mSelectedBackgroundColor = isKodi ?
+                ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardSelectedBackground)) :
                 ContextCompat.getColor(context, R.color.card_selected_background_white);
-        mSelectedTextColor =
+        mSelectedTextColor = isKodi ?
+                ContextCompat.getColor(context, R.color.card_default_text) :
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
 
         @SuppressLint("InflateParams")
         View container = LayoutInflater.from(context).inflate(R.layout.settings_card, null);
+        // Kodi scheme: transparent, otherwise the translucent colors would stack with the title background
+        // Kodi scheme: the translucent color is on the whole tile, the title stays transparent (no stacking)
         container.setBackgroundColor(mDefaultBackgroundColor);
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(context).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    container.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));
         //}
 
         TextView textView = container.findViewById(R.id.settings_title);
-        textView.setBackgroundColor(mDefaultBackgroundColor);
+        textView.setBackgroundColor(isKodi ? Color.TRANSPARENT : mDefaultBackgroundColor);
         textView.setTextColor(mDefaultTextColor);
 
         ViewUtil.setTextScrollSpeed(textView, getCardTextScrollSpeed(context));
@@ -52,7 +58,11 @@ public class SettingsCardPresenter extends Presenter {
             int backgroundColor = hasFocus ? mSelectedBackgroundColor : mDefaultBackgroundColor;
             int textColor = hasFocus ? mSelectedTextColor : mDefaultTextColor;
             
-            textView.setBackgroundColor(backgroundColor);
+            if (isKodi) {
+                container.setBackgroundColor(backgroundColor);
+            } else {
+                textView.setBackgroundColor(backgroundColor);
+            }
             textView.setTextColor(textColor);
 
             if (hasFocus) {

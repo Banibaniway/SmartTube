@@ -17,6 +17,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.R;
+import com.liskovsoft.smartyoutubetv2.tv.presenter.CustomVerticalGridPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.SettingsCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.interfaces.SettingsSection;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.GridFragmentHelper;
@@ -69,7 +70,7 @@ public class SettingsGridFragment extends GridFragment implements SettingsSectio
     }
 
     private void setupAdapter() {
-        VerticalGridPresenter presenter = new VerticalGridPresenter(ViewUtil.FOCUS_ZOOM_FACTOR, ViewUtil.FOCUS_DIMMER_ENABLED);
+        VerticalGridPresenter presenter = new CustomVerticalGridPresenter();
         presenter.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
         presenter.setNumberOfColumns(GridFragmentHelper.getMaxColsNum(getContext(), R.dimen.settings_card_width));
         setGridPresenter(presenter);

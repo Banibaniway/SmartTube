@@ -19,6 +19,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
@@ -29,6 +30,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.proxy.ProxyManager;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
+import com.liskovsoft.smartyoutubetv2.common.utils.PlaybackWarmUp;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
@@ -39,6 +41,8 @@ import java.util.List;
 public class SplashPresenter extends BasePresenter<SplashView> {
     private static final String TAG = SplashPresenter.class.getSimpleName();
     private static final long APP_INIT_DELAY_MS = 10_000;
+    // Early warm-up of the playback engine (tokens, player data) to speed up the first video
+    private static final long WARM_UP_DELAY_MS = 1_500;
     @SuppressLint("StaticFieldLeak")
     private static SplashPresenter sInstance;
     private static boolean sRunOnce;
@@ -94,8 +98,10 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             initProxy();
             initVideoStateService();
             initStreamReminderService();
+            PlaybackWarmUp.start(getContext(), WARM_UP_DELAY_MS);
         }
     }
+
 
     private void runPerInstanceTasks() {
         if (!mRunPerInstance) {
@@ -215,6 +221,10 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                 SearchPresenter searchPresenter = SearchPresenter.instance(getContext());
                 if (IntentExtractor.isInstantPlayCommand(intent)) {
                     searchPresenter.startPlay(searchText);
+                } else if (searchText != null && isExternalIntent(intent)) {
+                    // Search from an external app (e.g. Kodi): main results in the grid, Back returns to that app
+                    getViewManager().setExternalEntry(ChannelUploadsView.class);
+                    ChannelUploadsPresenter.instance(getContext()).openSearch(searchText);
                 } else {
                     searchPresenter.startSearch(searchText);
                 }
@@ -246,9 +256,15 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             String playlistId = IntentExtractor.extractPlaylistId(intent);
 
             if (playlistId != null) {
+                ChannelUploadsPresenter channelUploadsPresenter = ChannelUploadsPresenter.instance(getContext());
+                if (isExternalIntent(intent)) {
+                    getViewManager().setExternalEntry(ChannelUploadsView.class);
+                    // New session: forget the previous search (no return to its results)
+                    channelUploadsPresenter.clearSession();
+                }
                 Video video = new Video();
                 video.playlistId = playlistId;
-                ChannelUploadsPresenter.instance(getContext()).openChannel(video);
+                channelUploadsPresenter.openChannel(video);
                 return true;
             }
 
@@ -384,6 +400,13 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                 },
                 error -> MessageHelpers.showMessage(context, added)
         );
+    }
+
+    /**
+     * Opened by an external app (e.g. Kodi) while the app isn't on screen. Same test as the player only mode.
+     */
+    private boolean isExternalIntent(Intent intent) {
+        return !IntentExtractor.isRestartIntent(intent) && !IntentExtractor.isATVIntent(intent) && !getViewManager().isTopViewVisible();
     }
 
     private void enablePlayerOnlyModeIfNeeded(Intent intent) {

@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.leanback.widget.VerticalGridPresenter;
+import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 public class CustomVerticalGridPresenter extends VerticalGridPresenter {
@@ -26,6 +27,17 @@ public class CustomVerticalGridPresenter extends VerticalGridPresenter {
      */
     @Override
     protected ViewHolder createGridViewHolder(ViewGroup parent) {
+        ViewHolder viewHolder = createGridViewHolderInt(parent);
+
+        if (MainUIData.instance(parent.getContext()).isKodiScheme()) {
+            // The focus shadow shows through the translucent cards: keep it (same layout as the original) but invisible
+            CustomListRowPresenter.makeShadowsTransparent(viewHolder.getGridView());
+        }
+
+        return viewHolder;
+    }
+
+    private ViewHolder createGridViewHolderInt(ViewGroup parent) {
         if (mLayoutResId > 0 && mRootResId > 0) {
             View root = LayoutInflater.from(parent.getContext()).inflate(
                     mLayoutResId, parent, false);

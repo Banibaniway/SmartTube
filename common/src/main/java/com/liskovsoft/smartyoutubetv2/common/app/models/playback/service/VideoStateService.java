@@ -34,6 +34,9 @@ public class VideoStateService implements ProfileChangeListener {
         }
     };
     private long mSessionStartTimeMs;
+    // History disabled: state of the last played video, in memory only (never saved on the device).
+    // Used for the resume and the progress marker of the cards.
+    private State mSessionState;
 
     private VideoStateService(Context context) {
         mPrefs = AppPrefs.instance(context);
@@ -70,11 +73,25 @@ public class VideoStateService implements ProfileChangeListener {
             }
         }
 
+        if (mSessionState != null && mSessionState.video != null && Helpers.equals(videoId, mSessionState.video.videoId)) {
+            return mSessionState;
+        }
+
         return null;
+    }
+
+    /**
+     * History disabled: keep the state of the last played video in memory only.
+     */
+    public void setSessionState(State state) {
+        mSessionState = state;
     }
 
     public void removeByVideoId(String videoId) {
         Helpers.removeIf(mStates, state -> Helpers.equals(state.video.videoId, videoId));
+        if (mSessionState != null && mSessionState.video != null && Helpers.equals(mSessionState.video.videoId, videoId)) {
+            mSessionState = null;
+        }
         persistState();
     }
 
@@ -89,6 +106,7 @@ public class VideoStateService implements ProfileChangeListener {
 
     public void clear() {
         mStates.clear();
+        mSessionState = null;
         persistState();
     }
 

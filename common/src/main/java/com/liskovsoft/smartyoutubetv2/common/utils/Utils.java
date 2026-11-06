@@ -958,6 +958,7 @@ public class Utils {
 
     public static void cancelFinishTheApp(Context context) {
         ViewManager.instance(context).cancelOnFinish();
+        ViewManager.instance(context).cancelPendingFinish();
         removeCallbacks(sForceFinishTheApp);
     }
 

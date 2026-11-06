@@ -996,6 +996,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
+    public void resetAudioOutput() {
+        mExoPlayerController.resetAudioOutput();
+    }
+
+    @Override
     public long getDurationMs() {
         return mExoPlayerController.getDurationMs();
     }

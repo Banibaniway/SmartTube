@@ -519,6 +519,10 @@ public class VideoStateController extends BasePlayerController {
             return;
         }
 
+        // History disabled: nothing is saved on the device, the position is only kept in memory
+        // (resume after a player restart on the same video, e.g. after a network error)
+        boolean isHistoryDisabled = getGeneralData().getHistoryState() == GeneralData.HISTORY_DISABLED;
+
         // Exceptional cases:
         // 1) Track is ended
         // 2) Pause on end enabled
@@ -530,12 +534,21 @@ public class VideoStateController extends BasePlayerController {
         boolean isLiveBroken = video.isLive && durationMs <= 30_000; // live without a history
         if (isPositionActual && !isLiveBroken) { // partially viewed
             State state = new State(video, positionMs, durationMs, getPlayer().getSpeed());
-            getStateService().save(state);
+            if (isHistoryDisabled) {
+                getStateService().setSessionState(state);
+            } else {
+                getStateService().save(state);
+            }
             // Sync video. You could safely use it later to restore state.
             video.sync(state);
         } else { // fully viewed
             // Mark video as fully viewed. This could help to restore proper progress marker on the video card later.
-            getStateService().save(new State(video, durationMs, durationMs, getPlayer().getSpeed()));
+            if (isHistoryDisabled) {
+                // Full progress marker on the card, the playback starts from the beginning (see restorePosition)
+                getStateService().setSessionState(new State(video, durationMs, durationMs, getPlayer().getSpeed()));
+            } else {
+                getStateService().save(new State(video, durationMs, durationMs, getPlayer().getSpeed()));
+            }
             video.markFullyViewed();
         }
 
@@ -550,6 +563,12 @@ public class VideoStateController extends BasePlayerController {
         }
 
         State state = getStateService().getByVideoId(item.videoId);
+
+        // History disabled (in-memory state): a fully viewed video starts from the beginning
+        if (state != null && getGeneralData().getHistoryState() == GeneralData.HISTORY_DISABLED
+                && state.durationMs > 0 && state.durationMs - state.positionMs <= 1_000) {
+            state = null;
+        }
 
         boolean stateIsOutdated = isStateOutdated(state, item);
         if (stateIsOutdated) { // check that the user logged in

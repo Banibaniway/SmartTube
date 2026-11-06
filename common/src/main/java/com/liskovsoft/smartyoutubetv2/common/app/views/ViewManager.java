@@ -47,7 +47,12 @@ public class ViewManager {
     private long mPrevThrottleTimeMS;
     private boolean mIsMoveToBackEnabled;
     private boolean mIsFinished;
+    // Delayed exit cleanup: skipped when the app is relaunched before it runs
+    private volatile int mFinishGeneration;
+    private volatile boolean mIsFinishPending;
     private boolean mIsPlayerOnlyModeEnabled;
+    // Screen opened directly by an external app (e.g. Kodi): Back on it returns to that app
+    private Class<?> mExternalEntryView;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
     private WeakHashSet<Runnable> mOnFinish;
@@ -130,6 +135,22 @@ public class ViewManager {
     }
 
     public void startParentView(Activity activity) {
+        // The app is closing (see properlyFinishTheApp): don't launch the parent view.
+        // Otherwise the parent screen flashes and the app may restart.
+        if (mIsFinished && mIsMoveToBackEnabled) {
+            Log.d(TAG, "The app is closing. Skip starting the parent view...");
+            return;
+        }
+
+        // Back on the screen opened by an external app: return to that app (same as the player only mode)
+        if (mExternalEntryView != null && mViewMapping.get(mExternalEntryView) == activity.getClass()) {
+            Log.d(TAG, "Back on the external entry screen. Returning to the calling app...");
+            mExternalEntryView = null;
+            mActivityStack.clear();
+            safeMoveTaskToBack(activity);
+            return;
+        }
+
         if (activity.getIntent() != null) {
             removeTopActivity();
 
@@ -168,6 +189,7 @@ public class ViewManager {
     public void startDefaultView() {
         mIsMoveToBackEnabled = false;
         mIsPlayerOnlyModeEnabled = false;
+        mExternalEntryView = null;
 
         Class<?> lastActivity;
 
@@ -294,6 +316,23 @@ public class ViewManager {
         mIsPlayerOnlyModeEnabled = enable;
     }
 
+    /**
+     * The view is opened directly by an external app (e.g. Kodi).<br/>
+     * The previous screens are forgotten, so Back on this view returns to that app.
+     */
+    public void setExternalEntry(Class<?> viewClass) {
+        // Ensure that we're not opening tube link from description dialog
+        if (viewClass != null && AppDialogPresenter.instance(mContext).isDialogShown()) {
+            return;
+        }
+
+        mExternalEntryView = viewClass;
+
+        if (viewClass != null) {
+            mActivityStack.clear();
+        }
+    }
+
     public boolean isPlayerOnlyModeEnabled() {
         //return mIsPlayerOnlyModeEnabled && PlaybackPresenter.instance(mContext).getBackgroundMode() != PlayerEngine.BACKGROUND_MODE_PIP;
         return mIsPlayerOnlyModeEnabled && !PlaybackPresenter.instance(mContext).isInPipMode();
@@ -317,8 +356,12 @@ public class ViewManager {
             Log.d(TAG, "Trying finish the app...");
             mIsMoveToBackEnabled = true; // close all activities below current one
             mIsFinished = true;
+            mExternalEntryView = null;
 
             mActivityStack.clear();
+
+            final int finishGeneration = ++mFinishGeneration;
+            mIsFinishPending = true;
 
             ((MotherActivity) activity).finishReally();
 
@@ -331,6 +374,13 @@ public class ViewManager {
             // Do reset state because the app should continue to run in the background.
             // NOTE: Don't rely on MotherActivity.onDestroy() because activity can be killed silently.
             RxHelper.runAsync(() -> {
+                if (finishGeneration != mFinishGeneration) {
+                    // The app has been relaunched meanwhile: don't reset the new session
+                    Log.d(TAG, "The app is relaunched. Skip the exit cleanup...");
+                    return;
+                }
+
+                mIsFinishPending = false;
                 clearCaches();
                 SplashPresenter.unhold();
                 BrowsePresenter.unhold();
@@ -504,6 +554,17 @@ public class ViewManager {
         }
 
         return null;
+    }
+
+    /**
+     * The app is relaunched while closing: cancel the delayed exit cleanup.
+     */
+    public void cancelPendingFinish() {
+        if (mIsFinishPending) {
+            mIsFinishPending = false;
+            mFinishGeneration++;
+            mIsMoveToBackEnabled = false; // same as the cleanup does
+        }
     }
 
     public void cancelOnFinish() {

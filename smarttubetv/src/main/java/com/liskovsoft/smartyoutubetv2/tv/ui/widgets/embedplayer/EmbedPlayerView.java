@@ -306,6 +306,11 @@ public class EmbedPlayerView extends PlayerView implements PlaybackView {
     }
 
     @Override
+    public void resetAudioOutput() {
+        mExoPlayerController.resetAudioOutput();
+    }
+
+    @Override
     public long getDurationMs() {
         return mExoPlayerController.getDurationMs();
     }

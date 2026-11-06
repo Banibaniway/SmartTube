@@ -7,6 +7,8 @@
     <attr name="cardSelectedBackground" format="reference"/>
     <attr name="cardProgressStyle" format="reference"/>
     <attr name="appLogo" format="reference"/>
+    <!-- Player seek bar background (track) -->
+    <attr name="playbackProgressBackgroundColor" format="reference"/>
 
     <!-- Increase spacing between items in GridView -->
     <style name="GridViewStyle" parent="Widget.Leanback.GridItems.VerticalGridView">
@@ -248,4 +250,41 @@
         <item name="cardSelectedBackground">@color/card_selected_background_white_grey</item>
     </style>
     <!--  End Color scheme: Dark Blue (OLED)  -->
+
+    <!--  Color scheme: Kodi  -->
+    <!-- Based on the monochrome scheme (no red) -->
+    <style name="App.Theme.Kodi.Browse" parent="App.Theme.DarkGrey2.OLED.Browse">
+        <!-- Same as before the monochrome base: black window, no logo, search icon color -->
+        <item name="android:windowBackground">@color/scheme_grey_shelf_background_dark</item>
+        <item name="brandAccentColor">@color/card_default_background_kodi</item>
+        <item name="appLogo">@null</item>
+        <item name="cardSelectedBackground">@color/card_selected_background_kodi</item>
+        <item name="cardDefaultBackground">@color/card_default_background_kodi</item>
+        <!-- Left panel (sections) -->
+        <item name="brandColor">@color/card_default_background_kodi</item>
+        <!-- Search orb -->
+        <item name="defaultSearchColor">@color/card_selected_background_kodi</item>
+        <item name="defaultSearchBrightColor">@color/card_selected_background_kodi</item>
+        <!-- Default background (image). Can be overridden by /sdcard/data/smarttube_background.jpg -->
+        <item name="shelfBackground">@drawable/kodi_background</item>
+        <item name="cardProgressStyle">@style/ProgressBarHorizontal.Kodi</item>
+    </style>
+    <style name="App.Theme.Kodi.Player" parent="App.Theme.DarkGrey2.OLED.Player">
+        <item name="cardSelectedBackground">@color/card_selected_background_kodi</item>
+        <item name="cardDefaultBackground">@color/card_default_background_kodi</item>
+        <item name="cardProgressStyle">@style/ProgressBarHorizontal.Kodi</item>
+        <!-- Seek bar: dark track, grey buffer, light progress -->
+        <item name="playbackProgressBackgroundColor">@color/grey</item>
+        <item name="playbackProgressSecondaryColor">@color/kodi_progress_buffer</item>
+        <item name="playbackProgressPrimaryColor">@color/light_grey</item>
+    </style>
+    <!-- Card progress (resume position): dark track, light progress -->
+    <style name="ProgressBarHorizontal.Kodi" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/progress_bar_kodi</item>
+    </style>
+    <!-- Settings: no red accent -->
+    <style name="App.Theme.Kodi.Preferences" parent="App.Theme.DarkGrey.Preferences">
+        <item name="android:colorAccent" tools:targetApi="21">@color/light_grey</item>
+    </style>
+    <!--  End Color scheme: Kodi  -->
 </resources>

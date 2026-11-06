@@ -42,6 +42,14 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
     private Video mChannel;
     private MediaGroup mPendingGroup;
     private VideoGroup mBaseGroup;
+    // The grid shows the results of this search (opened by an external app, e.g. Kodi)
+    private String mSearchText;
+    // A playlist has been opened from the search results: Back shows the results again, focused on this item
+    private String mReturnSearchText;
+    private Video mReturnItem;
+    // Item clicked in the search results (kept by clear(): some paths call clear() before showing the new content)
+    private String mClickedSearchText;
+    private Video mClickedItem;
 
     public ChannelUploadsPresenter(Context context) {
         super(context);
@@ -81,6 +89,10 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mChannel = null;
         mPendingGroup = null;
         mBaseGroup = null;
+        mSearchText = null;
+        mReturnSearchText = null;
+        mReturnItem = null;
+        forgetClick();
     }
 
     @Override
@@ -90,6 +102,10 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
     @Override
     public void onVideoItemClicked(Video item) {
+        // A playlist opened from the search results may replace the grid content (see setChannel)
+        mClickedSearchText = mSearchText;
+        mClickedItem = mSearchText != null ? item : null;
+
         VideoActionPresenter.instance(getContext()).apply(item);
     }
 
@@ -138,7 +154,15 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
             return;
         }
 
+        // Opened from the search results: remember them for Back
+        String returnSearchText = mSearchText;
+
         clear();
+
+        if (returnSearchText != null) {
+            mReturnSearchText = returnSearchText;
+            mReturnItem = item;
+        }
 
         mChannel = item;
 
@@ -147,6 +171,66 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         if (getView() != null) {
             update(item);
         }
+    }
+
+    /**
+     * Show the main search results in the grid.
+     */
+    public void openSearch(String searchText) {
+        if (searchText == null) {
+            return;
+        }
+
+        clearSession();
+
+        mSearchText = searchText;
+
+        getViewManager().startView(ChannelUploadsView.class);
+
+        if (getView() != null) {
+            updateSearch(searchText);
+        }
+    }
+
+    /**
+     * Back on a playlist opened from the search results: show the results again.
+     * @return true if handled
+     */
+    public boolean goBack() {
+        if (mReturnSearchText == null || getView() == null) {
+            return false;
+        }
+
+        String searchText = mReturnSearchText;
+        Video item = mReturnItem;
+
+        clear();
+        forgetClick();
+
+        mSearchText = searchText;
+        getView().selectItem(item); // restored when the item is loaded (the grid loads the next pages if needed)
+        updateSearch(searchText);
+
+        return true;
+    }
+
+    private void updateSearch(String searchText) {
+        update(getContentService().getSearchObserve(searchText, 0).flatMap(this::findMainGroup));
+    }
+
+    /**
+     * Main results only: the first non-empty group (it has the continuation).
+     */
+    private Observable<MediaGroup> findMainGroup(List<MediaGroup> mediaGroups) {
+        if (mediaGroups != null) {
+            for (MediaGroup mediaGroup : mediaGroups) {
+                if (mediaGroup != null && mediaGroup.getMediaItems() != null && !mediaGroup.getMediaItems().isEmpty()) {
+                    return Observable.just(mediaGroup);
+                }
+            }
+        }
+
+        return Observable.empty();
     }
 
     public void obtainGroup(Video item, OnMediaGroup callback) {
@@ -184,6 +268,28 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
     public void setChannel(Video channel) {
         mChannel = channel;
+
+        // Playlist clicked in the search results, opened by MediaServiceManager.chooseChannelPresenter()
+        // (clear() then setChannel()): remember the results for Back
+        if (channel != null && mClickedSearchText != null && channel.equals(mClickedItem)) {
+            mReturnSearchText = mClickedSearchText;
+            mReturnItem = mClickedItem;
+        }
+
+        forgetClick();
+    }
+
+    /**
+     * New content opened by an external app (e.g. Kodi): forget the previous search and its results.
+     */
+    public void clearSession() {
+        clear();
+        forgetClick();
+    }
+
+    private void forgetClick() {
+        mClickedSearchText = null;
+        mClickedItem = null;
     }
 
     private void disposeActions() {
@@ -340,6 +446,9 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mChannel = null;
         mPendingGroup = null;
         mBaseGroup = null;
+        mSearchText = null;
+        mReturnSearchText = null;
+        mReturnItem = null;
     }
 
     public void refresh() {
@@ -353,6 +462,9 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         } else if (mChannel != null) {
             getView().clear();
             update(mChannel);
+        } else if (mSearchText != null) {
+            getView().clear();
+            updateSearch(mSearchText);
         }
     }
 }

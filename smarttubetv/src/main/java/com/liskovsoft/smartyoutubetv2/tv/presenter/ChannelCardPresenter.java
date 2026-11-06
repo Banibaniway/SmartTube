@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.presenter;
 
+import android.graphics.Color;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
@@ -48,14 +49,16 @@ public class ChannelCardPresenter extends LongClickPresenter {
                 ContextCompat.getColor(context, R.color.dark_red);
         mSelectedBackgroundColor =
                 ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardSelectedBackground));
-        mSelectedTextColor =
+        mSelectedTextColor = MainUIData.instance(context).getColorScheme().isWhiteCardText ?
+                ContextCompat.getColor(context, R.color.card_default_text) :
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
 
         updateDimensions(context);
 
         @SuppressLint("InflateParams")
         View container = LayoutInflater.from(context).inflate(R.layout.channel_card, null);
-        container.setBackgroundColor(mDefaultBackgroundColor);
+        // Kodi scheme: transparent, otherwise the translucent colors would stack with the title background
+        container.setBackgroundColor(MainUIData.instance(context).isKodiScheme() ? Color.TRANSPARENT : mDefaultBackgroundColor);
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(context).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    container.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));
         //}

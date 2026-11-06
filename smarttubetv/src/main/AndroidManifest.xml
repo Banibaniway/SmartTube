@@ -129,6 +129,34 @@
             </intent-filter>
         </activity>
 
+        <!-- Invisible: started by Kodi to warm up the playback engine before the app is opened -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.WarmUpActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="org.smarttube.action.WARMUP" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Invisible: started by Kodi when it quits, closes the app process -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.QuitActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="org.smarttube.action.QUIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Alt app launcher icon -->
         <activity-alias android:label="@string/app_name"
                         android:icon="@mipmap/app_icon_alt"

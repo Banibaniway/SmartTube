@@ -11,17 +11,23 @@ import android.view.WindowManager;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class GridFragmentHelper {
-    private static final Map<Integer, Pair<Integer, Integer>> sCardDimensPx = new HashMap<>();
-    private static final Map<Integer, Float> sMaxColsNum = new HashMap<>();
+    // Concurrent: may be cleared from a background thread (exit cleanup)
+    private static final Map<Integer, Pair<Integer, Integer>> sCardDimensPx = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<Integer, Float> sMaxColsNum = new java.util.concurrent.ConcurrentHashMap<>();
     private static final Runnable sInvalidate = GridFragmentHelper::invalidate;
+
+    static {
+        // Card sizes are computed from the scale: forget them every time the scale is forgotten
+        MotherActivity.addOnMetricsInvalidated(sInvalidate);
+    }
     private static final int MIN_ADAPTER_SIZE = 6;
 
     private static void invalidate() {
