@@ -148,7 +148,7 @@
     <string name="app_double_back_exit">Double back</string>
     <string name="app_single_back_exit">Single back</string>
     <string name="action_video_zoom">Video zoom</string>
-    <string name="action_video_zoom_133" formatted="false">Zoom 158%</string>
+    <string name="action_video_zoom_133" formatted="false">Zoom 145%</string>
     <string name="msg_video_zoom">Zoom %d%%</string>
     <string name="video_zoom">Video zoom</string>
     <string name="video_zoom_default">Default</string>

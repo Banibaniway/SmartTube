@@ -51,7 +51,7 @@ import java.util.List;
 public class PlayerUIController extends BasePlayerController {
     private static final String TAG = PlayerUIController.class.getSimpleName();
     private static final long SUGGESTIONS_RESET_TIMEOUT_MS = 500;
-    private static final int ZOOM_BUTTON_PERCENTS = 158;
+    private static final int ZOOM_BUTTON_PERCENTS = 145;
     private final Handler mHandler;
     private final MediaItemService mMediaItemService;
     private SuggestionsController mSuggestionsController;
@@ -567,7 +567,7 @@ public class PlayerUIController extends BasePlayerController {
     }
 
     /**
-     * Zoom 158% of the current video only (not saved): toggle 100% / 158%.
+     * Zoom 145% of the current video only (not saved): toggle 100% / 145%.
      */
     private void toggleZoom133() {
         if (getPlayer() == null) {
