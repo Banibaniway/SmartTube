@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.KodiSpinnerDrawable;
 
@@ -45,7 +46,9 @@ public class PreviewCardView extends FrameLayout {
         mImageView = view.findViewById(R.id.main_image);
         mOverlayView = view.findViewById(R.id.view_overlay);
         mProgressCard = view.findViewById(R.id.progress_card);
-        mProgressCard.setIndeterminateDrawable(KodiSpinnerDrawable.create(getContext())); // Kodi busy spinner
+        if (MainUIData.instance(getContext()).isKodiScheme()) {
+            mProgressCard.setIndeterminateDrawable(KodiSpinnerDrawable.create(getContext())); // Kodi busy spinner
+        }
     }
 
     public void setVideoUrl(String videoUrl) {

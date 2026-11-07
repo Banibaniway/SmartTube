@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 
 import androidx.leanback.widget.BaseCardView;
+import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.misc.KodiSpinnerDrawable;
 
@@ -44,7 +45,9 @@ public class LoadingCardView extends BaseCardView {
                         styleResId, R.styleable.lbImageCardView);
 
         mProgressBar = (ProgressBar) findViewById(R.id.progress_indicator);
-        mProgressBar.setIndeterminateDrawable(KodiSpinnerDrawable.create(getContext())); // Kodi busy spinner
+        if (MainUIData.instance(getContext()).isKodiScheme()) {
+            mProgressBar.setIndeterminateDrawable(KodiSpinnerDrawable.create(getContext())); // Kodi busy spinner
+        }
         cardAttrs.recycle();
     }
 
