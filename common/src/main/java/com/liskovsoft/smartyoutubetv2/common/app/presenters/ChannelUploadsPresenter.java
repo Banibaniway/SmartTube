@@ -26,6 +26,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.OnComplete;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.OnError;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.OnMediaGroup;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -47,9 +48,12 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
     // A playlist has been opened from the search results: Back shows the results again, focused on this item
     private String mReturnSearchText;
     private Video mReturnItem;
+    // The search results already loaded (all pages, same order), shown again on Back without a new search
+    private VideoGroup mReturnGroup;
     // Item clicked in the search results (kept by clear(): some paths call clear() before showing the new content)
     private String mClickedSearchText;
     private Video mClickedItem;
+    private VideoGroup mClickedGroup;
 
     public ChannelUploadsPresenter(Context context) {
         super(context);
@@ -92,6 +96,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mSearchText = null;
         mReturnSearchText = null;
         mReturnItem = null;
+        mReturnGroup = null;
         forgetClick();
     }
 
@@ -105,6 +110,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         // A playlist opened from the search results may replace the grid content (see setChannel)
         mClickedSearchText = mSearchText;
         mClickedItem = mSearchText != null ? item : null;
+        mClickedGroup = mSearchText != null ? mBaseGroup : null;
 
         VideoActionPresenter.instance(getContext()).apply(item);
     }
@@ -156,12 +162,14 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
         // Opened from the search results: remember them for Back
         String returnSearchText = mSearchText;
+        VideoGroup returnGroup = mBaseGroup;
 
         clear();
 
         if (returnSearchText != null) {
             mReturnSearchText = returnSearchText;
             mReturnItem = item;
+            mReturnGroup = returnGroup;
         }
 
         mChannel = item;
@@ -203,13 +211,26 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
         String searchText = mReturnSearchText;
         Video item = mReturnItem;
+        VideoGroup group = mReturnGroup;
 
         clear();
         forgetClick();
 
         mSearchText = searchText;
         getView().selectItem(item); // restored when the item is loaded (the grid loads the next pages if needed)
-        updateSearch(searchText);
+
+        if (group != null && !group.isEmpty()) {
+            // Same results, same order, no new search. The group keeps its continuation (next pages).
+            // NOTE: the grid crashes if the items are added immediately after clear()
+            Utils.postDelayed(() -> {
+                if (getView() != null && searchText.equals(mSearchText) && mBaseGroup == null) {
+                    mBaseGroup = group;
+                    update(group);
+                }
+            }, 100);
+        } else {
+            updateSearch(searchText);
+        }
 
         return true;
     }
@@ -274,6 +295,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         if (channel != null && mClickedSearchText != null && channel.equals(mClickedItem)) {
             mReturnSearchText = mClickedSearchText;
             mReturnItem = mClickedItem;
+            mReturnGroup = mClickedGroup;
         }
 
         forgetClick();
@@ -290,6 +312,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
     private void forgetClick() {
         mClickedSearchText = null;
         mClickedItem = null;
+        mClickedGroup = null;
     }
 
     private void disposeActions() {
@@ -449,6 +472,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mSearchText = null;
         mReturnSearchText = null;
         mReturnItem = null;
+        mReturnGroup = null;
     }
 
     public void refresh() {

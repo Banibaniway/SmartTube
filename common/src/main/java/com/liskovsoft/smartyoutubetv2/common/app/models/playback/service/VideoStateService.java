@@ -34,9 +34,11 @@ public class VideoStateService implements ProfileChangeListener {
         }
     };
     private long mSessionStartTimeMs;
-    // History disabled: state of the last played video, in memory only (never saved on the device).
-    // Used for the resume and the progress marker of the cards.
-    private State mSessionState;
+    // History disabled: states of the videos played for the current film (Kodi), in memory only (never saved on the device).
+    // Used for the resume and the progress marker of the cards. Cleared when the film changes (see setSessionKey).
+    private static final int SESSION_STATE_MAX_SIZE = 100;
+    private final List<State> mSessionStates = Helpers.createSafeLRUList(SESSION_STATE_MAX_SIZE);
+    private String mSessionKey;
 
     private VideoStateService(Context context) {
         mPrefs = AppPrefs.instance(context);
@@ -73,25 +75,46 @@ public class VideoStateService implements ProfileChangeListener {
             }
         }
 
-        if (mSessionState != null && mSessionState.video != null && Helpers.equals(videoId, mSessionState.video.videoId)) {
-            return mSessionState;
+        for (State state : mSessionStates) {
+            if (state.video != null && Helpers.equals(videoId, state.video.videoId)) {
+                return state;
+            }
         }
 
         return null;
     }
 
     /**
-     * History disabled: keep the state of the last played video in memory only.
+     * History disabled: keep the state of the video in memory only (replaces the previous state of the same video).
      */
     public void setSessionState(State state) {
-        mSessionState = state;
+        if (state == null || state.video == null) {
+            return;
+        }
+
+        removeSessionState(state.video.videoId);
+        mSessionStates.add(state);
+    }
+
+    /**
+     * Film opened from Kodi: a different film clears the in-memory states.
+     */
+    public void setSessionKey(String key) {
+        if (key == null || key.isEmpty() || key.equals(mSessionKey)) {
+            return;
+        }
+
+        mSessionKey = key;
+        mSessionStates.clear();
+    }
+
+    private void removeSessionState(String videoId) {
+        Helpers.removeIf(mSessionStates, state -> state.video != null && Helpers.equals(state.video.videoId, videoId));
     }
 
     public void removeByVideoId(String videoId) {
         Helpers.removeIf(mStates, state -> Helpers.equals(state.video.videoId, videoId));
-        if (mSessionState != null && mSessionState.video != null && Helpers.equals(mSessionState.video.videoId, videoId)) {
-            mSessionState = null;
-        }
+        removeSessionState(videoId);
         persistState();
     }
 
@@ -106,7 +129,7 @@ public class VideoStateService implements ProfileChangeListener {
 
     public void clear() {
         mStates.clear();
-        mSessionState = null;
+        mSessionStates.clear();
         persistState();
     }
 

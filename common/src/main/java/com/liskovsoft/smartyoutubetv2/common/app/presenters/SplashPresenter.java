@@ -35,8 +35,10 @@ import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class SplashPresenter extends BasePresenter<SplashView> {
     private static final String TAG = SplashPresenter.class.getSimpleName();
@@ -223,6 +225,8 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                     searchPresenter.startPlay(searchText);
                 } else if (searchText != null && isExternalIntent(intent)) {
                     // Search from an external app (e.g. Kodi): main results in the grid, Back returns to that app
+                    // Another film: forget the in-memory progress of the previous one (history disabled)
+                    VideoStateService.instance(getContext()).setSessionKey(toFilmKey(searchText));
                     getViewManager().setExternalEntry(ChannelUploadsView.class);
                     ChannelUploadsPresenter.instance(getContext()).openSearch(searchText);
                 } else {
@@ -400,6 +404,24 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                 },
                 error -> MessageHelpers.showMessage(context, added)
         );
+    }
+
+    /**
+     * Film of a search sent by Kodi (the words added by the Kodi addon are removed):<br/>
+     * "bande annonce {title} {year} VF", "{title} {year} analyse", "{title} {year} soundtrack" -> "{title} {year}"
+     */
+    private static String toFilmKey(String searchText) {
+        String key = Normalizer.normalize(searchText, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "") // accents
+                .toLowerCase(Locale.ROOT)
+                .replace('-', ' ');
+
+        key = (" " + key + " ")
+                .replaceAll("\\s+", " ")
+                .replace(" bande annonce ", " ")
+                .replaceAll(" (vf|analyses?|soundtrack)(?= )", "");
+
+        return key.replaceAll("\\s+", " ").trim();
     }
 
     /**
