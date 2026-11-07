@@ -463,6 +463,22 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         mIsMergedSource = mergedSource;
     }
 
+    private static boolean hasNonDrcAudio(MediaTrack[][] mediaTracks) {
+        for (MediaTrack[] trackGroup : mediaTracks) {
+            if (trackGroup == null) {
+                continue;
+            }
+
+            for (MediaTrack mediaTrack : trackGroup) {
+                if (mediaTrack instanceof AudioTrack && mediaTrack.format != null && !TrackSelectorUtil.isDrc(mediaTrack.format)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private MediaTrack findBestMatch(MediaTrack originTrack) {
         Log.d(TAG, "findBestMatch: Starting: " + originTrack.format);
 
@@ -475,6 +491,9 @@ public class TrackSelectorManager implements TrackSelectorCallback {
             MediaTrack tmpResult = null;
 
             MediaTrack[][] mediaTracks = filterByLanguage(renderer.mediaTracks, originTrack);
+
+            // DRC audio ("stable volume") squashes the loud effects and keeps the dialogs: never choose it automatically
+            boolean skipDrc = originTrack instanceof AudioTrack && !TrackSelectorUtil.isDrc(originTrack.format) && hasNonDrcAudio(mediaTracks);
 
             outerloop:
             for (int groupIndex = 0; groupIndex < mediaTracks.length; groupIndex++) {
@@ -490,6 +509,10 @@ public class TrackSelectorManager implements TrackSelectorCallback {
 
                 for (MediaTrack mediaTrack : trackGroup) {
                     if (mediaTrack == null || hasPlaybackGlitch(mediaTrack)) {
+                        continue;
+                    }
+
+                    if (skipDrc && TrackSelectorUtil.isDrc(mediaTrack.format)) {
                         continue;
                     }
 

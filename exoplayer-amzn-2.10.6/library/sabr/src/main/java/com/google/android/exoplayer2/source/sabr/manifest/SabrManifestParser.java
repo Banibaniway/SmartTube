@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerC
 import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerContext.ClientName;
 import com.google.android.exoplayer2.source.sabr.parser.models.SabrFormatMetadata;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.XtagsUtil;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaSubtitle;
@@ -371,7 +372,7 @@ public class SabrManifestParser {
         String language = mediaFormat.getLanguage();
         String baseUrl = mFormatInfo.getServerAbrStreamingUrl();
         String label = mediaFormat.getQualityLabel();
-        boolean isDrc = mediaFormat.isDrc();
+        boolean isDrc = mediaFormat.isDrc() || XtagsUtil.isDrc(mediaFormat.getXtags());
         long lastModified = Helpers.parseLong(mediaFormat.getLmt());
         String drmSchemeType = null;
         ArrayList<SchemeData> drmSchemeDatas = new ArrayList<>();

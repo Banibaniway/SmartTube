@@ -14,6 +14,7 @@ import com.google.android.exoplayer2.source.dash.manifest.SegmentBase.SegmentTem
 import com.google.android.exoplayer2.source.dash.manifest.SegmentBase.SegmentTimelineElement;
 import com.google.android.exoplayer2.source.dash.manifest.SegmentBase.SingleSegmentBase;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.XtagsUtil;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaSubtitle;
@@ -362,7 +363,7 @@ public class DashManifestParser2 {
         String language = mediaFormat.getLanguage();
         String baseUrl = mediaFormat.getUrl();
         String label = mediaFormat.getQualityLabel();
-        boolean isDrc = mediaFormat.isDrc();
+        boolean isDrc = mediaFormat.isDrc() || XtagsUtil.isDrc(mediaFormat.getXtags());
         long lastModified = Helpers.parseLong(mediaFormat.getLmt());
         String drmSchemeType = null;
         ArrayList<SchemeData> drmSchemeDatas = new ArrayList<>();
