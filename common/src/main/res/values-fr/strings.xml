@@ -140,6 +140,8 @@
     <string name="app_double_back_exit">2 fois sur retour pour sortir</string>
     <string name="app_single_back_exit">1 fois sur retour pour sortir</string>
     <string name="action_video_zoom">Zoom vidéo</string>
+    <string name="action_video_zoom_133" formatted="false">Zoom 133%</string>
+    <string name="msg_video_zoom">Zoom %d %%</string>
     <string name="video_zoom">Zoom vidéo</string>
     <string name="video_zoom_default">Par défaut</string>
     <string name="video_zoom_fit_width">Ajustement de la largeur</string>

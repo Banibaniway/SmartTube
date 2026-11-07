@@ -101,6 +101,10 @@ public class PlaybackActivity extends LeanbackActivity {
         } else if (keyCode == KeyEvent.KEYCODE_BUTTON_R2) {
             mPlaybackFragment.fastForward();
             return true;
+        } else if (keyCode == KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0) {
+            // Menu key (Fire TV remote): zoom 133% of the current video
+            mPlaybackFragment.toggleZoom133();
+            return true;
         }
 
         return super.onKeyDown(keyCode, event);

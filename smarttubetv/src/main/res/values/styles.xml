@@ -280,6 +280,8 @@
         <item name="playbackProgressBackgroundColor">@color/grey</item>
         <item name="playbackProgressSecondaryColor">@color/kodi_progress_buffer</item>
         <item name="playbackProgressPrimaryColor">@color/light_grey</item>
+        <!-- Enabled buttons (two-state actions) -->
+        <item name="playbackControlsIconHighlightColor">@color/kodi_osd_button_on</item>
     </style>
     <!-- Card progress (resume position): dark track, light progress -->
     <style name="ProgressBarHorizontal.Kodi" parent="@android:style/Widget.ProgressBar.Horizontal">

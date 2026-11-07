@@ -51,6 +51,7 @@ import java.util.List;
 public class PlayerUIController extends BasePlayerController {
     private static final String TAG = PlayerUIController.class.getSimpleName();
     private static final long SUGGESTIONS_RESET_TIMEOUT_MS = 500;
+    private static final int ZOOM_133 = 133;
     private final Handler mHandler;
     private final MediaItemService mMediaItemService;
     private SuggestionsController mSuggestionsController;
@@ -103,6 +104,8 @@ public class PlayerUIController extends BasePlayerController {
             getPlayer().setAspectRatio(getPlayerData().getAspectRatio());
             getPlayer().setRotationAngle(getPlayerData().getRotationAngle());
         }
+
+        getPlayerData().setTempZoomPercents(PlayerData.TEMP_ZOOM_NONE);
     }
 
     @Override
@@ -112,6 +115,7 @@ public class PlayerUIController extends BasePlayerController {
         if (item != null && !item.equals(getVideo())) {
             mIsMetadataLoaded = false; // metadata isn't loaded yet at this point
             resetButtonStates();
+            resetZoom133(); // current video only
         }
     }
 
@@ -562,6 +566,52 @@ public class PlayerUIController extends BasePlayerController {
         settingsPresenter.showDialog(getContext().getString(R.string.video_aspect));
     }
 
+    /**
+     * Zoom 133% of the current video only (not saved): toggle 100% / 133%.
+     */
+    private void toggleZoom133() {
+        if (getPlayer() == null) {
+            return;
+        }
+
+        boolean enable = getPlayerData().getTempZoomPercents() != ZOOM_133;
+
+        if (enable) {
+            getPlayerData().setTempZoomPercents(ZOOM_133);
+            getPlayer().setResizeMode(PlayerData.RESIZE_MODE_DEFAULT);
+            getPlayer().setZoomPercents(ZOOM_133);
+        } else {
+            restoreZoom();
+        }
+
+        getPlayer().setButtonState(R.id.action_video_zoom_133, enable ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
+        MessageHelpers.showMessage(getContext(), getContext().getString(R.string.msg_video_zoom, enable ? ZOOM_133 : 100));
+    }
+
+    private void resetZoom133() {
+        if (getPlayerData().getTempZoomPercents() == PlayerData.TEMP_ZOOM_NONE) {
+            return;
+        }
+
+        restoreZoom();
+
+        if (getPlayer() != null) {
+            getPlayer().setButtonState(R.id.action_video_zoom_133, PlayerUI.BUTTON_OFF);
+        }
+    }
+
+    /**
+     * Back to the saved zoom settings
+     */
+    private void restoreZoom() {
+        getPlayerData().setTempZoomPercents(PlayerData.TEMP_ZOOM_NONE);
+
+        if (getPlayer() != null) {
+            getPlayer().setResizeMode(getPlayerData().getResizeMode());
+            getPlayer().setZoomPercents(getPlayerData().getZoomPercents());
+        }
+    }
+
     private void onPipClicked() {
         if (getPlayer() == null) {
             return;
@@ -600,6 +650,8 @@ public class PlayerUIController extends BasePlayerController {
             AppDialogUtil.showPlaybackQueueDialog(getContext(), item -> getMainController().onNewVideo(item));
         } else if (buttonId == R.id.action_video_zoom) {
             onVideoZoom();
+        } else if (buttonId == R.id.action_video_zoom_133) {
+            toggleZoom133();
         } else if (buttonId == R.id.action_seek_interval) {
             onSeekInterval();
         } else if (buttonId == R.id.action_share) {

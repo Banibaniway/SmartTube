@@ -5,6 +5,7 @@
     <item name="action_subscribe" type="id"/>
     <item name="action_channel" type="id"/>
     <item name="action_video_zoom" type="id"/>
+    <item name="action_video_zoom_133" type="id"/>
     <item name="action_playlist_add" type="id"/>
     <item name="action_video_stats" type="id"/>
     <item name="action_video_speed" type="id"/>

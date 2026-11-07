@@ -58,6 +58,8 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
     private int mSubtitleStyleIndex;
     private int mResizeMode;
     private int mZoomPercents;
+    public static final int TEMP_ZOOM_NONE = Integer.MIN_VALUE;
+    private int mTempZoomPercents = TEMP_ZOOM_NONE; // not saved
     private float mAspectRatio;
     private int mRotationAngle;
     private boolean mIsVideoFlipEnabled;
@@ -513,6 +515,24 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
 
     public int getZoomPercents() {
         return mZoomPercents;
+    }
+
+    /**
+     * Zoom of the current video only (Zoom 133% button), never saved. {@link #TEMP_ZOOM_NONE} if none.
+     */
+    public int getTempZoomPercents() {
+        return mTempZoomPercents;
+    }
+
+    public void setTempZoomPercents(int percents) {
+        mTempZoomPercents = percents;
+    }
+
+    /**
+     * The zoom actually used: the temporary one if any, else the saved one.
+     */
+    public int getEffectiveZoomPercents() {
+        return mTempZoomPercents != TEMP_ZOOM_NONE ? mTempZoomPercents : mZoomPercents;
     }
 
     public void setZoomPercents(int percents) {

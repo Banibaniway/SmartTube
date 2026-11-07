@@ -214,6 +214,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 {R.string.action_playback_queue, PlayerTweaksData.PLAYER_BUTTON_PLAYBACK_QUEUE},
                 {R.string.screen_dimming, PlayerTweaksData.PLAYER_BUTTON_SCREEN_DIMMING},
                 {R.string.action_video_zoom, PlayerTweaksData.PLAYER_BUTTON_VIDEO_ZOOM},
+                {R.string.action_video_zoom_133, PlayerTweaksData.PLAYER_BUTTON_VIDEO_ZOOM_133},
                 {R.string.action_channel, PlayerTweaksData.PLAYER_BUTTON_OPEN_CHANNEL},
                 {R.string.action_search, PlayerTweaksData.PLAYER_BUTTON_SEARCH},
                 {R.string.run_in_background, PlayerTweaksData.PLAYER_BUTTON_PIP},

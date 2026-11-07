@@ -9,6 +9,14 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class ZipHelper2 {
+    // Fork: background written by Kodi in the shared "data" folder (see UriBackgroundManager).
+    // Never saved in a backup and never restored from an old one (it would replace the current background).
+    private static final String KODI_BACKGROUND_FILE = "smarttube_background.jpg";
+
+    private static boolean isExcluded(String name) {
+        return name != null && (name.equals(KODI_BACKGROUND_FILE) || name.endsWith("/" + KODI_BACKGROUND_FILE));
+    }
+
     public static void zipDirectory(File sourceDir, File zipFile) {
         try {
             ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFile));
@@ -26,6 +34,10 @@ public class ZipHelper2 {
                 }
             }
         } else {
+            if (isExcluded(file.getName())) {
+                return;
+            }
+
             FileInputStream fis = new FileInputStream(file);
             zos.putNextEntry(new ZipEntry(base.substring(0, base.length() -1))); // strip "/" at the end to mark as file
             byte[] buf = new byte[8192];
@@ -44,6 +56,11 @@ public class ZipHelper2 {
             byte[] buffer = new byte[8192];
 
             while ((entry = zis.getNextEntry()) != null) {
+                if (isExcluded(entry.getName())) {
+                    zis.closeEntry();
+                    continue;
+                }
+
                 File out = new File(targetRoot, entry.getName());
 
                 String canonicalOut = out.getCanonicalPath();
