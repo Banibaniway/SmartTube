@@ -50,6 +50,9 @@
     </style>
     <style name="App.Theme.Leanback.Browse" parent="Theme.Leanback.Browse">
         <item name="android:windowBackground">@color/shelf_background_dark</item>
+        <!-- No starting window (grey screen while the first screen and its background are prepared):
+             the calling app (e.g. Kodi) stays on screen until the first frame is ready -->
+        <item name="android:windowDisablePreview">true</item>
         <item name="brandColor">@color/fastlane_background_dark</item>
         <item name="brandAccentColor">@color/fastlane_background</item>
         <item name="shelfBackground">@color/shelf_background_dark</item>
