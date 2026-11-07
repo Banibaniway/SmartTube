@@ -20,6 +20,8 @@
     <color name="kodi_progress_buffer">#888888</color>
     <!-- Kodi scheme: icon of the enabled player buttons -->
     <color name="kodi_osd_button_on">#FF11E7B1</color>
+    <!-- Kodi scheme: busy spinner (same as the selected card) -->
+    <color name="kodi_spinner">#40FFFFFF</color>
     <color name="card_selected_background_white_grey">#D3D3D3</color>
     <color name="card_selected_background_yellow">#ffaa3f</color>
     <color name="card_selected_background_grey">#343434</color>
