@@ -51,7 +51,7 @@ import java.util.List;
 public class PlayerUIController extends BasePlayerController {
     private static final String TAG = PlayerUIController.class.getSimpleName();
     private static final long SUGGESTIONS_RESET_TIMEOUT_MS = 500;
-    private static final int ZOOM_133 = 133;
+    private static final int ZOOM_BUTTON_PERCENTS = 158;
     private final Handler mHandler;
     private final MediaItemService mMediaItemService;
     private SuggestionsController mSuggestionsController;
@@ -567,25 +567,25 @@ public class PlayerUIController extends BasePlayerController {
     }
 
     /**
-     * Zoom 133% of the current video only (not saved): toggle 100% / 133%.
+     * Zoom 158% of the current video only (not saved): toggle 100% / 158%.
      */
     private void toggleZoom133() {
         if (getPlayer() == null) {
             return;
         }
 
-        boolean enable = getPlayerData().getTempZoomPercents() != ZOOM_133;
+        boolean enable = getPlayerData().getTempZoomPercents() != ZOOM_BUTTON_PERCENTS;
 
         if (enable) {
-            getPlayerData().setTempZoomPercents(ZOOM_133);
+            getPlayerData().setTempZoomPercents(ZOOM_BUTTON_PERCENTS);
             getPlayer().setResizeMode(PlayerData.RESIZE_MODE_DEFAULT);
-            getPlayer().setZoomPercents(ZOOM_133);
+            getPlayer().setZoomPercents(ZOOM_BUTTON_PERCENTS);
         } else {
             restoreZoom();
         }
 
         getPlayer().setButtonState(R.id.action_video_zoom_133, enable ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
-        MessageHelpers.showMessage(getContext(), getContext().getString(R.string.msg_video_zoom, enable ? ZOOM_133 : 100));
+        MessageHelpers.showMessage(getContext(), getContext().getString(R.string.msg_video_zoom, enable ? ZOOM_BUTTON_PERCENTS : 100));
     }
 
     private void resetZoom133() {
@@ -763,6 +763,12 @@ public class PlayerUIController extends BasePlayerController {
     private boolean handleMenuKey(int keyCode) {
         boolean controlsShown = getPlayer().isOverlayShown();
         boolean suggestionsShown = getPlayer().isSuggestionsShown();
+
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            // Menu key (Fire TV remote): zoom of the current video only, no OSD
+            toggleZoom133();
+            return true;
+        }
 
         if (KeyHelpers.isMenuKey(keyCode) && !suggestionsShown) {
             getPlayer().showOverlay(!controlsShown);

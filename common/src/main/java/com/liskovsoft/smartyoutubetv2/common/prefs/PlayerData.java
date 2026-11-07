@@ -518,7 +518,7 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
     }
 
     /**
-     * Zoom of the current video only (Zoom 133% button), never saved. {@link #TEMP_ZOOM_NONE} if none.
+     * Zoom of the current video only (Zoom button), never saved. {@link #TEMP_ZOOM_NONE} if none.
      */
     public int getTempZoomPercents() {
         return mTempZoomPercents;

@@ -304,15 +304,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         mPlaybackPresenter.onSeekPositionChanged(positionMs);
     }
 
-    /**
-     * Menu key: same as the Zoom 133% button (even when the button isn't displayed)
-     */
-    public void toggleZoom133() {
-        if (mPlaybackPresenter != null) {
-            mPlaybackPresenter.onButtonClicked(R.id.action_video_zoom_133, getButtonState(R.id.action_video_zoom_133));
-        }
-    }
-
     public void skipToNext() {
         if (mPlayerGlue != null) {
             mPlayerGlue.next();

@@ -71,7 +71,7 @@ public abstract class BasePlayerController implements PlayerEventListener {
         if (getPlayer() == null || getPlayerTweaksData().isDontResizeVideoToFitDialogEnabled()) {
             return;
         }
-        getPlayer().setZoomPercents(getPlayerData().getEffectiveZoomPercents()); // incl. the Zoom 133% of the current video
+        getPlayer().setZoomPercents(getPlayerData().getEffectiveZoomPercents()); // incl. the Zoom button (158%) of the current video
         getPlayer().setVideoGravity(Gravity.CENTER);
     };
 

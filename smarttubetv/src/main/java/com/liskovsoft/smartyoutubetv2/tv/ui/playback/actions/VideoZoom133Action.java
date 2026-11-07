@@ -4,7 +4,7 @@ import android.content.Context;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 
 /**
- * Zoom 133% of the current video only (toggle 100% / 133%). Same icon as the video zoom.
+ * Zoom 158% of the current video only (toggle 100% / 158%). Same icon as the video zoom.
  */
 public class VideoZoom133Action extends TwoStateAction {
     public VideoZoom133Action(Context context) {
