@@ -840,6 +840,10 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                 }
             }
 
+            if (mediaTrack1 instanceof AudioTrack && mediaTrack2 instanceof AudioTrack) {
+                return compareAudio(format1, format2);
+            }
+
             int leftVal = format2.width + (int) format2.frameRate + MediaTrack.getCodecWeight(format2.codecs);
             int rightVal = format1.width + (int) format1.frameRate + MediaTrack.getCodecWeight(format1.codecs);
 
@@ -850,6 +854,50 @@ public class TrackSelectorManager implements TrackSelectorCallback {
             }
 
             return delta;
+        }
+
+        /**
+         * Audio list: displayed bitrate (desc), codec (opus, mp4a, others), variant (standard, voice boost, DRC).<br/>
+         * So each standard track is followed by its twins.
+         */
+        private static int compareAudio(Format format1, Format format2) {
+            // Displayed bitrate: 0.01 Mbps steps
+            int delta = Math.round(format2.bitrate / 10_000f) - Math.round(format1.bitrate / 10_000f);
+            if (delta != 0) {
+                return delta;
+            }
+
+            delta = getAudioCodecRank(format1.codecs) - getAudioCodecRank(format2.codecs);
+            if (delta != 0) {
+                return delta;
+            }
+
+            delta = getAudioVariantRank(format1) - getAudioVariantRank(format2);
+            if (delta != 0) {
+                return delta;
+            }
+
+            int delta2 = format2.bitrate - format1.bitrate;
+            return delta2 == 0 ? 1 : delta2; // NOTE: don't return 0 or track will be removed
+        }
+
+        private static int getAudioCodecRank(String codecs) {
+            if (codecs == null) {
+                return 2;
+            }
+
+            return codecs.startsWith("opus") ? 0 : codecs.startsWith("mp4a") ? 1 : 2;
+        }
+
+        private static int getAudioVariantRank(Format format) {
+            switch (TrackSelectorUtil.getAudioVariant(format)) {
+                case TrackSelectorUtil.AUDIO_VARIANT_VOICE_BOOST:
+                    return 1;
+                case TrackSelectorUtil.AUDIO_VARIANT_DRC:
+                    return 2;
+                default:
+                    return 0;
+            }
         }
     }
 
