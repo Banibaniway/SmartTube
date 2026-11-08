@@ -117,6 +117,9 @@ public class HQDialogController extends BasePlayerController {
             } else {
                 getPlayerData().setTempVideoFormat(formatItem);
             }
+        } else if (formatItem.getType() == FormatItem.TYPE_AUDIO) {
+            // Manual audio track: current opening only (not saved)
+            getPlayerData().setTempAudioFormat(formatItem);
         } else {
             getPlayerData().setFormat(formatItem);
         }

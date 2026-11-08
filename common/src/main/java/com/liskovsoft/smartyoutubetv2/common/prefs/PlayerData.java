@@ -50,6 +50,7 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
     private int mBackgroundMode;
     private FormatItem mVideoFormat;
     private FormatItem mTempVideoFormat;
+    private FormatItem mTempAudioFormat; // manual audio choice: current opening only, never saved
     private FormatItem mAudioFormat;
     private FormatItem mSubtitleFormat;
     private int mVideoBufferType;
@@ -404,6 +405,14 @@ public class PlayerData extends DataChangeBase implements PlayerConstants, Profi
 
     public void setTempVideoFormat(FormatItem format) {
         mTempVideoFormat = format;
+    }
+
+    public void setTempAudioFormat(FormatItem format) {
+        mTempAudioFormat = format;
+    }
+
+    public FormatItem getTempAudioFormat() {
+        return mTempAudioFormat;
     }
 
     public FormatItem getTempVideoFormat() {

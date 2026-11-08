@@ -14,6 +14,8 @@ import com.google.android.exoplayer2.source.dash.manifest.SegmentBase.SegmentTem
 import com.google.android.exoplayer2.source.dash.manifest.SegmentBase.SegmentTimelineElement;
 import com.google.android.exoplayer2.source.dash.manifest.SegmentBase.SingleSegmentBase;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.metadata.Metadata;
+import com.google.android.exoplayer2.util.XtagsMetadata;
 import com.google.android.exoplayer2.util.XtagsUtil;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
@@ -363,7 +365,9 @@ public class DashManifestParser2 {
         String language = mediaFormat.getLanguage();
         String baseUrl = mediaFormat.getUrl();
         String label = mediaFormat.getQualityLabel();
-        boolean isDrc = mediaFormat.isDrc() || XtagsUtil.isDrc(mediaFormat.getXtags());
+        // Audio variants with the same itag (original / DRC / voice boost) differ by xtags only
+        String xtags = XtagsUtil.decode(mediaFormat.getXtags(), baseUrl);
+        boolean isDrc = mediaFormat.isDrc() || XtagsUtil.isDrc(xtags);
         long lastModified = Helpers.parseLong(mediaFormat.getLmt());
         String drmSchemeType = null;
         ArrayList<SchemeData> drmSchemeDatas = new ArrayList<>();
@@ -385,6 +389,10 @@ public class DashManifestParser2 {
                         codecs,
                         isDrc,
                         lastModified);
+
+        if (!xtags.isEmpty()) {
+            format = format.copyWithMetadata(new Metadata(new XtagsMetadata(xtags)));
+        }
 
         SegmentBase segmentBase = null;
 

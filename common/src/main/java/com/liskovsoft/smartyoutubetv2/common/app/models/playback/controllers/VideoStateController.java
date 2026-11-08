@@ -66,6 +66,8 @@ public class VideoStateController extends BasePlayerController {
 
         if (!item.equals(getVideo())) {
             mNewVideoTimeMs = System.currentTimeMillis();
+            // Manual audio track: kept on reload of the same video only
+            getPlayerData().setTempAudioFormat(null);
         }
 
         setPlayEnabled(true); // video just added
@@ -359,6 +361,9 @@ public class VideoStateController extends BasePlayerController {
 
     @Override
     public void onFinish() {
+        // Manual audio track: forgotten when the player is closed (next opening = default track)
+        getPlayerData().setTempAudioFormat(null);
+
         mIncognito = false;
     }
 
@@ -457,7 +462,11 @@ public class VideoStateController extends BasePlayerController {
             return;
         }
 
-        getPlayer().setFormat(getPlayerData().getFormat(FormatItem.TYPE_AUDIO));
+        if (getPlayerData().getTempAudioFormat() != null) {
+            getPlayer().setFormat(getPlayerData().getTempAudioFormat());
+        } else {
+            getPlayer().setFormat(getPlayerData().getFormat(FormatItem.TYPE_AUDIO));
+        }
     }
 
     private void restoreSubtitleFormat() {

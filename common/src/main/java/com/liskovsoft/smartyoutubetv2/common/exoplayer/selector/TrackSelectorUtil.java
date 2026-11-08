@@ -5,10 +5,13 @@ import android.util.Pair;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.XtagsMetadata;
+import com.google.android.exoplayer2.util.XtagsUtil;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.SubtitleTrack;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class TrackSelectorUtil {
     private static final String CODEC_PREFIX_AV1 = "av01";
@@ -208,12 +211,88 @@ public class TrackSelectorUtil {
         return is51Audio(format) ? "5.1" : "";
     }
 
+    /**
+     * Audio variant mark: Standard / Voix renforcée / DRC (+ unknown xtags as is)
+     */
     public static String buildDrcMark(Format format) {
-        return isDrc(format) ? "DRC" : "";
+        if (format == null) {
+            return "";
+        }
+
+        String mark;
+
+        switch (getAudioVariant(format)) {
+            case AUDIO_VARIANT_VOICE_BOOST:
+                mark = "Voix renforcée";
+                break;
+            case AUDIO_VARIANT_DRC:
+                mark = "DRC";
+                break;
+            default:
+                mark = "Standard";
+                break;
+        }
+
+        String unknownTags = getUnknownXtags(format);
+
+        return unknownTags.isEmpty() ? mark : mark + " [" + unknownTags + "]";
+    }
+
+    public static final int AUDIO_VARIANT_STANDARD = 0;
+    public static final int AUDIO_VARIANT_DRC = 1;
+    public static final int AUDIO_VARIANT_VOICE_BOOST = 2;
+
+    /**
+     * Same itag comes as original / DRC ("stable volume") / voice boost (speech enhanced, music lowered).
+     * Only the xtags tell them apart.
+     */
+    public static int getAudioVariant(Format format) {
+        if (format == null) {
+            return AUDIO_VARIANT_STANDARD;
+        }
+
+        String xtags = XtagsMetadata.get(format);
+
+        if (XtagsUtil.isVoiceBoost(xtags) || Helpers.endsWithAny(format.id, "-vb")) {
+            return AUDIO_VARIANT_VOICE_BOOST;
+        }
+
+        if (isDrc(format)) {
+            return AUDIO_VARIANT_DRC;
+        }
+
+        return AUDIO_VARIANT_STANDARD;
+    }
+
+    /**
+     * Xtags that aren't known (language, content type, variant): shown as is to the user
+     */
+    private static String getUnknownXtags(Format format) {
+        StringBuilder result = new StringBuilder();
+
+        for (Map.Entry<String, String> tag : XtagsUtil.parse(XtagsMetadata.get(format)).entrySet()) {
+            // Known tags: language, variant flags, original content (dubbed/descriptive content is shown)
+            if (Helpers.equalsAny(tag.getKey(), "lang", "drc", "vb")
+                    || ("acont".equals(tag.getKey()) && "original".equals(tag.getValue()))) {
+                continue;
+            }
+
+            if (result.length() > 0) {
+                result.append(":");
+            }
+
+            result.append(tag.getKey());
+
+            if (!tag.getValue().isEmpty()) {
+                result.append("=").append(tag.getValue());
+            }
+        }
+
+        return result.toString();
     }
 
     public static boolean isDrc(Format format) {
-        return format != null && (Helpers.endsWithAny(format.id, "drc") || format.isDrc);
+        return format != null && (Helpers.endsWithAny(format.id, "drc") || format.isDrc || XtagsUtil.isDrc(XtagsMetadata.get(format)));
     }
 
     public static boolean is51Audio(Format format) {

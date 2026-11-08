@@ -463,20 +463,39 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         mIsMergedSource = mergedSource;
     }
 
-    private static boolean hasNonDrcAudio(MediaTrack[][] mediaTracks) {
+    private static boolean hasAudioVariant(MediaTrack[][] mediaTracks, int variant) {
         for (MediaTrack[] trackGroup : mediaTracks) {
             if (trackGroup == null) {
                 continue;
             }
 
             for (MediaTrack mediaTrack : trackGroup) {
-                if (mediaTrack instanceof AudioTrack && mediaTrack.format != null && !TrackSelectorUtil.isDrc(mediaTrack.format)) {
+                if (mediaTrack instanceof AudioTrack && mediaTrack.format != null
+                        && TrackSelectorUtil.getAudioVariant(mediaTrack.format) == variant) {
                     return true;
                 }
             }
         }
 
         return false;
+    }
+
+    /**
+     * Audio variant to keep: the one of the origin (manual choice) or the standard one (automatic choice).<br/>
+     * DRC ("stable volume") and voice boost squash the music and the effects: never chosen automatically.
+     */
+    private static int getWantedAudioVariant(MediaTrack originTrack, MediaTrack[][] mediaTracks) {
+        if (!(originTrack instanceof AudioTrack)) {
+            return -1;
+        }
+
+        int originVariant = TrackSelectorUtil.getAudioVariant(originTrack.format);
+
+        if (hasAudioVariant(mediaTracks, originVariant)) {
+            return originVariant;
+        }
+
+        return hasAudioVariant(mediaTracks, TrackSelectorUtil.AUDIO_VARIANT_STANDARD) ? TrackSelectorUtil.AUDIO_VARIANT_STANDARD : -1;
     }
 
     private MediaTrack findBestMatch(MediaTrack originTrack) {
@@ -492,8 +511,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
 
             MediaTrack[][] mediaTracks = filterByLanguage(renderer.mediaTracks, originTrack);
 
-            // DRC audio ("stable volume") squashes the loud effects and keeps the dialogs: never choose it automatically
-            boolean skipDrc = originTrack instanceof AudioTrack && !TrackSelectorUtil.isDrc(originTrack.format) && hasNonDrcAudio(mediaTracks);
+            int wantedAudioVariant = getWantedAudioVariant(originTrack, mediaTracks);
 
             outerloop:
             for (int groupIndex = 0; groupIndex < mediaTracks.length; groupIndex++) {
@@ -512,7 +530,8 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                         continue;
                     }
 
-                    if (skipDrc && TrackSelectorUtil.isDrc(mediaTrack.format)) {
+                    if (wantedAudioVariant != -1 && mediaTrack instanceof AudioTrack
+                            && TrackSelectorUtil.getAudioVariant(mediaTrack.format) != wantedAudioVariant) {
                         continue;
                     }
 

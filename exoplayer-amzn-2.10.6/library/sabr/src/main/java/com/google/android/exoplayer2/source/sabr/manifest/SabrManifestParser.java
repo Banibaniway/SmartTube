@@ -18,6 +18,7 @@ import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerC
 import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerContext.ClientName;
 import com.google.android.exoplayer2.source.sabr.parser.models.SabrFormatMetadata;
 import com.google.android.exoplayer2.util.MimeTypes;
+import com.google.android.exoplayer2.util.XtagsMetadata;
 import com.google.android.exoplayer2.util.XtagsUtil;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
@@ -372,7 +373,9 @@ public class SabrManifestParser {
         String language = mediaFormat.getLanguage();
         String baseUrl = mFormatInfo.getServerAbrStreamingUrl();
         String label = mediaFormat.getQualityLabel();
-        boolean isDrc = mediaFormat.isDrc() || XtagsUtil.isDrc(mediaFormat.getXtags());
+        // Audio variants with the same itag (original / DRC / voice boost) differ by xtags only
+        String xtags = XtagsUtil.decode(mediaFormat.getXtags(), null);
+        boolean isDrc = mediaFormat.isDrc() || XtagsUtil.isDrc(xtags);
         long lastModified = Helpers.parseLong(mediaFormat.getLmt());
         String drmSchemeType = null;
         ArrayList<SchemeData> drmSchemeDatas = new ArrayList<>();
@@ -395,11 +398,20 @@ public class SabrManifestParser {
                         isDrc,
                         lastModified);
 
+        List<Metadata.Entry> metadataEntries = new ArrayList<>();
+
         if (!TextUtils.isEmpty(mediaFormat.getXtags())
                 || !TextUtils.isEmpty(mediaFormat.getAudioTrackId())) {
-            format = format.copyWithMetadata(
-                    new Metadata(new SabrFormatMetadata(
-                            mediaFormat.getXtags(), mediaFormat.getAudioTrackId())));
+            metadataEntries.add(new SabrFormatMetadata(
+                            mediaFormat.getXtags(), mediaFormat.getAudioTrackId()));
+        }
+
+        if (!xtags.isEmpty()) {
+            metadataEntries.add(new XtagsMetadata(xtags));
+        }
+
+        if (!metadataEntries.isEmpty()) {
+            format = format.copyWithMetadata(new Metadata(metadataEntries));
         }
 
         SegmentBase segmentBase = null;

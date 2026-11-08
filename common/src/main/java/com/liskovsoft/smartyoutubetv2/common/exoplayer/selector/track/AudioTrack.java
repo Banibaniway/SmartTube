@@ -86,6 +86,7 @@ public class AudioTrack extends MediaTrack {
             return false;
         }
 
-        return TrackSelectorUtil.isDrc(format1) == TrackSelectorUtil.isDrc(format2);
+        // Standard / DRC / voice boost
+        return TrackSelectorUtil.getAudioVariant(format1) == TrackSelectorUtil.getAudioVariant(format2);
     }
 }
