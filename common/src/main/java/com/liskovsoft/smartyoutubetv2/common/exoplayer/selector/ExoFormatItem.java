@@ -37,6 +37,7 @@ public class ExoFormatItem implements FormatItem {
     private String mFormatId;
     private boolean mIsPreset;
     private boolean mIsDrc;
+    private int mAudioVariant; // Standard / DRC / voice boost (same itag)
 
     public static List<FormatItem> from(Set<MediaTrack> mediaTracks) {
         if (mediaTracks == null) {
@@ -93,6 +94,7 @@ public class ExoFormatItem implements FormatItem {
                 formatItem.mId = format.id.hashCode();
                 formatItem.mFormatId = format.id;
                 formatItem.mIsDrc = format.isDrc;
+                formatItem.mAudioVariant = TrackSelectorUtil.getAudioVariant(format);
             }
         } else {
             formatItem.mIsDefault = true; // fake auto track
@@ -152,6 +154,7 @@ public class ExoFormatItem implements FormatItem {
                     if (mFormatId != null && formatItem.mFormatId != null) {
                         return mType == formatItem.mType
                                 && mIsDrc == formatItem.mIsDrc                      // drc audio
+                                && mAudioVariant == formatItem.mAudioVariant        // standard / drc / voice boost
                                 && Helpers.contains(SubtitleTrack.trim(mLanguage),  // dubbed audio
                                     SubtitleTrack.trim(formatItem.mLanguage))
                                 && Helpers.equals(mFormatId, formatItem.mFormatId); // instead of compare by bitrate
@@ -159,6 +162,7 @@ public class ExoFormatItem implements FormatItem {
                     return mIsPreset == formatItem.mIsPreset
                             && mType == formatItem.mType
                             && mIsDrc == formatItem.mIsDrc
+                            && mAudioVariant == formatItem.mAudioVariant
                             && mFrameRate == formatItem.mFrameRate
                             && mWidth == formatItem.mWidth
                             && mHeight == formatItem.mHeight
