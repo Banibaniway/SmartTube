@@ -159,7 +159,8 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         // Fix for java.util.ConcurrentModificationException inside of:
         // com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.ExoFormatItem.from (ExoFormatItem.java:44)
         // Won't help: renderer.sortedTracks = Collections.synchronizedSortedSet(new TreeSet<>(new MediaTrackFormatComparator()));
-        SortedSet<MediaTrack> sortedTracks = new TreeSet<>(new MediaTrackFormatComparator());
+        SortedSet<MediaTrack> sortedTracks = new TreeSet<>(new MediaTrackFormatComparator(
+                rendererIndex == RENDERER_INDEX_AUDIO ? getAudioGroupBitrates(renderer.trackGroups) : null));
 
         // AUTO OPTION: add disable track option
         MediaTrack noMediaTrack = MediaTrack.forRendererIndex(rendererIndex);
@@ -818,7 +819,47 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         public MediaTrack selectedTrack;
     }
 
+    /**
+     * Audio twins (standard / voice boost / DRC) share the itag but not exactly the bitrate.<br/>
+     * Bitrate of the group = bitrate of the standard track (or the max one).
+     */
+    private static Map<String, Integer> getAudioGroupBitrates(TrackGroupArray trackGroups) {
+        Map<String, Integer> result = new HashMap<>();
+        Map<String, Integer> standard = new HashMap<>();
+
+        for (int groupIndex = 0; groupIndex < trackGroups.length; groupIndex++) {
+            TrackGroup group = trackGroups.get(groupIndex);
+
+            for (int trackIndex = 0; trackIndex < group.length; trackIndex++) {
+                Format format = group.getFormat(trackIndex);
+
+                if (format == null || format.id == null) {
+                    continue;
+                }
+
+                Integer max = result.get(format.id);
+                if (max == null || format.bitrate > max) {
+                    result.put(format.id, format.bitrate);
+                }
+
+                if (TrackSelectorUtil.getAudioVariant(format) == TrackSelectorUtil.AUDIO_VARIANT_STANDARD) {
+                    standard.put(format.id, format.bitrate);
+                }
+            }
+        }
+
+        result.putAll(standard);
+
+        return result;
+    }
+
     private static class MediaTrackFormatComparator implements Comparator<MediaTrack> {
+        private final Map<String, Integer> mAudioGroupBitrates;
+
+        MediaTrackFormatComparator(Map<String, Integer> audioGroupBitrates) {
+            mAudioGroupBitrates = audioGroupBitrates;
+        }
+
         @Override
         public int compare(MediaTrack mediaTrack1, MediaTrack mediaTrack2) {
             Format format1 = mediaTrack1.format;
@@ -857,12 +898,11 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         }
 
         /**
-         * Audio list: displayed bitrate (desc), codec (opus, mp4a, others), variant (standard, voice boost, DRC).<br/>
-         * So each standard track is followed by its twins.
+         * Audio list: groups of twins (same itag) by bitrate of the group (desc), codec (opus, mp4a, others),
+         * then inside of the group: standard, voice boost, DRC.
          */
-        private static int compareAudio(Format format1, Format format2) {
-            // Displayed bitrate: 0.01 Mbps steps
-            int delta = Math.round(format2.bitrate / 10_000f) - Math.round(format1.bitrate / 10_000f);
+        private int compareAudio(Format format1, Format format2) {
+            int delta = getGroupBitrate(format2) - getGroupBitrate(format1);
             if (delta != 0) {
                 return delta;
             }
@@ -872,6 +912,14 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                 return delta;
             }
 
+            // Don't mix different groups with the same bitrate
+            if (format1.id != null && format2.id != null) {
+                delta = format1.id.compareTo(format2.id);
+                if (delta != 0) {
+                    return delta;
+                }
+            }
+
             delta = getAudioVariantRank(format1) - getAudioVariantRank(format2);
             if (delta != 0) {
                 return delta;
@@ -879,6 +927,11 @@ public class TrackSelectorManager implements TrackSelectorCallback {
 
             int delta2 = format2.bitrate - format1.bitrate;
             return delta2 == 0 ? 1 : delta2; // NOTE: don't return 0 or track will be removed
+        }
+
+        private int getGroupBitrate(Format format) {
+            Integer bitrate = mAudioGroupBitrates != null && format.id != null ? mAudioGroupBitrates.get(format.id) : null;
+            return bitrate != null ? bitrate : format.bitrate;
         }
 
         private static int getAudioCodecRank(String codecs) {
