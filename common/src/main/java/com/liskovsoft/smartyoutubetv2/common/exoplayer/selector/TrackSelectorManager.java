@@ -708,7 +708,9 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                          continue;
                     }
 
-                    if (resultLanguage != null && Helpers.startsWith(mediaTrack.format.language, resultLanguage)) { // en-us
+                    // Automatic dubbing isn't the preferred language (like the official app: original by default)
+                    if (resultLanguage != null && !TrackSelectorUtil.isAutoDubbed(mediaTrack.format)
+                            && Helpers.startsWith(mediaTrack.format.language, resultLanguage)) { // en-us
                         if (resultGroup == null) {
                             resultGroup = new ArrayList<>();
                         }

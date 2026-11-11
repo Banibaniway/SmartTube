@@ -271,9 +271,11 @@ public class TrackSelectorUtil {
         StringBuilder result = new StringBuilder();
 
         for (Map.Entry<String, String> tag : XtagsUtil.parse(XtagsMetadata.get(format)).entrySet()) {
-            // Known tags: language, variant flags, original content (dubbed/descriptive content is shown)
+            // Known tags: language, variant flags, original content,
+            // content already shown in the language label, e.g. "fr-fr (dubbed-auto)"
             if (Helpers.equalsAny(tag.getKey(), "lang", "drc", "vb")
-                    || ("acont".equals(tag.getKey()) && "original".equals(tag.getValue()))) {
+                    || ("acont".equals(tag.getKey()) && ("original".equals(tag.getValue())
+                        || Helpers.contains(format.language, "(" + tag.getValue() + ")")))) {
                 continue;
             }
 
@@ -289,6 +291,14 @@ public class TrackSelectorUtil {
         }
 
         return result.toString();
+    }
+
+    /**
+     * YouTube automatic dubbing (machine translation of the "original" track)
+     */
+    public static boolean isAutoDubbed(Format format) {
+        return format != null && (Helpers.contains(format.language, "dubbed-auto")
+                || "dubbed-auto".equals(XtagsUtil.parse(XtagsMetadata.get(format)).get("acont")));
     }
 
     public static boolean isDrc(Format format) {
