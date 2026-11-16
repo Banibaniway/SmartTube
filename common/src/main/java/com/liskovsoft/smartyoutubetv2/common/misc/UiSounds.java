@@ -15,8 +15,14 @@ import com.liskovsoft.smartyoutubetv2.common.R;
 public final class UiSounds {
     public static final int CLICK = 0;
     public static final int BACK = 1;
+    // Original Fire TV navigation sounds
+    public static final int NAV_UP = 2;
+    public static final int NAV_DOWN = 3;
+    public static final int NAV_LEFT = 4;
+    public static final int NAV_RIGHT = 5;
 
-    private static final int[] RES_IDS = {R.raw.ui_click, R.raw.ui_back};
+    private static final int[] RES_IDS = {R.raw.ui_click, R.raw.ui_back,
+            R.raw.ui_nav_up, R.raw.ui_nav_down, R.raw.ui_nav_left, R.raw.ui_nav_right};
     private static SoundPool sPool;
     private static final int[] sSoundIds = new int[RES_IDS.length];
     private static final SparseBooleanArray sLoaded = new SparseBooleanArray();

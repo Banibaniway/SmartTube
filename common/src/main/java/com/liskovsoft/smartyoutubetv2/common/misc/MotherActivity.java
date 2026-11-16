@@ -7,6 +7,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build.VERSION;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.view.KeyCharacterMap.UnavailableException;
@@ -153,6 +154,7 @@ public class MotherActivity extends FragmentActivity {
         }
 
         playKeySound(event);
+        setPendingNavSound(event);
 
         try {
             boolean handled = super.dispatchKeyEvent(event);
@@ -287,9 +289,61 @@ public class MotherActivity extends FragmentActivity {
                 if (newFocus != null) {
                     newFocus.setSoundEffectsEnabled(false);
                 }
+
+                playPendingNavSound(oldFocus, newFocus);
             });
         } catch (Throwable e) {
             e.printStackTrace();
+        }
+    }
+
+    private static final long NAV_SOUND_TIMEOUT_MS = 500;
+    private int mPendingNavSound = -1;
+    private long mPendingNavSoundTimeMs;
+
+    /**
+     * Kodi color scheme: original Fire TV sound on up/down/left/right, only when the focus really moves.<br/>
+     * The focus may move a bit later than the key (Leanback grids): the sound is played by the focus listener.
+     */
+    private void setPendingNavSound(KeyEvent event) {
+        if (event.getAction() != KeyEvent.ACTION_DOWN || !isUiSoundsEnabled()) {
+            return;
+        }
+
+        int sound;
+
+        switch (event.getKeyCode()) {
+            case KeyEvent.KEYCODE_DPAD_UP:
+                sound = UiSounds.NAV_UP;
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                sound = UiSounds.NAV_DOWN;
+                break;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                sound = UiSounds.NAV_LEFT;
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                sound = UiSounds.NAV_RIGHT;
+                break;
+            default:
+                mPendingNavSound = -1; // other key: no navigation sound
+                return;
+        }
+
+        mPendingNavSound = sound;
+        mPendingNavSoundTimeMs = SystemClock.uptimeMillis();
+    }
+
+    private void playPendingNavSound(View oldFocus, View newFocus) {
+        if (mPendingNavSound == -1 || oldFocus == null || newFocus == null || oldFocus == newFocus) {
+            return;
+        }
+
+        int sound = mPendingNavSound;
+        mPendingNavSound = -1; // one sound per key press
+
+        if (SystemClock.uptimeMillis() - mPendingNavSoundTimeMs <= NAV_SOUND_TIMEOUT_MS) {
+            UiSounds.play(sound);
         }
     }
 
